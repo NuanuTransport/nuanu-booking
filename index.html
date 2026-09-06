@@ -40,8 +40,17 @@ nav button.on{background:var(--card);color:var(--ink)}
 label{display:block;font-weight:600;font-size:14px;margin-bottom:6px}
 .hint{font-weight:400;color:var(--muted);font-size:12.5px}
 input,select,textarea{
-  display:block;width:100%;padding:11px 12px;font-size:16px;font-family:inherit;
+  display:block;width:100%;min-width:0;max-width:100%;
+  padding:11px 12px;font-size:16px;font-family:inherit;
   border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);
+}
+input[type=date],input[type=time]{
+  -webkit-appearance:none;appearance:none;
+  height:44px;line-height:22px;
+}
+input[type=date]::-webkit-date-and-time-value,
+input[type=time]::-webkit-date-and-time-value{
+  text-align:left;margin:0;
 }
 input:focus,select:focus,textarea:focus{outline:2px solid var(--moss);outline-offset:-1px}
 textarea{resize:vertical;min-height:54px}
