@@ -267,9 +267,11 @@ function boot() {
     document.getElementById('boot').style.display = 'none';
     document.getElementById('app').style.display = 'block';
   }).catch(function (err) {
-    document.getElementById('boot').textContent = 'Could not reach the server. ' + err.message;
+    document.getElementById('boot').innerHTML =
+      '<p>Could not reach the server.</p>' +
+      '<p style="font-size:12px;word-break:break-all">' + err.message + '</p>' +
+      '<p style="font-size:12px;word-break:break-all">API_URL is:<br>' + API_URL + '</p>';
   });
-}
 boot();
 
 function tab(which) {
