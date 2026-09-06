@@ -232,12 +232,14 @@ try {
 } catch (e) {}
 
 function api(action, data) {
-  return fetch(API_URL, {
-    method: 'POST',
-    body: JSON.stringify({ action: action, token: TOKEN, data: data || {} })
-  }).then(function (r) { return r.json(); });
-}
-
+       var url = API_URL
+         + '?action=' + encodeURIComponent(action)
+         + '&t=' + encodeURIComponent(TOKEN)
+         + '&data=' + encodeURIComponent(JSON.stringify(data || {}))
+         + '&cb=' + Date.now();
+       return fetch(url).then(function (r) { return r.json(); });
+     }
+  
 function boot() {
   if (!TOKEN) {
     document.getElementById('boot').textContent =
