@@ -23,7 +23,7 @@ body{
   font-family:system-ui,-apple-system,'Segoe UI',sans-serif;
   font-size:15px;line-height:1.5;
 }
-.wrap{width:100%;max-width:460px;margin:0 auto;padding:16px 14px 90px}
+.wrap{width:100%;max-width:460px;margin:0 auto;padding:16px 16px 90px;overflow:hidden}
 header{margin-bottom:14px}
 h1{font-size:20px;margin:0 0 2px;line-height:1.2;letter-spacing:-.01em}
 header p{margin:0;color:var(--muted);font-size:13.5px}
@@ -44,6 +44,15 @@ input,select,textarea{
   padding:11px 12px;font-size:16px;font-family:inherit;
   border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);
 }
+.field{overflow:hidden}
+input[type=date],input[type=time]{
+  width:100% !important;
+  min-width:0 !important;
+  max-width:100% !important;
+  -webkit-appearance:none;
+  appearance:none;
+  box-sizing:border-box;
+}
 input[type=date],input[type=time]{
   -webkit-appearance:none;appearance:none;
   height:44px;line-height:22px;
@@ -54,8 +63,8 @@ input[type=time]::-webkit-date-and-time-value{
 }
 input:focus,select:focus,textarea:focus{outline:2px solid var(--moss);outline-offset:-1px}
 textarea{resize:vertical;min-height:54px}
-.row{display:flex;gap:8px}
-.row .field{flex:1 1 0;min-width:0}
+.row{display:block}
+.row .field{width:100%}
 .choices{display:flex;flex-wrap:wrap;gap:6px}
 .choice{flex:1 1 90px;min-width:0}
 .choice input{position:absolute;opacity:0;pointer-events:none}
