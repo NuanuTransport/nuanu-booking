@@ -385,7 +385,7 @@ function loadList() {
 
     box.innerHTML = res.bookings.map(function (b) {
       var acts = '';
-      if (b.status === 'ONGOING') {
+      if (b.status === 'ONGOING' && b.selfDrive) {
         acts += '<button class="fin" onclick="doFinish(\'' + b.id + '\')">Finish trip</button>';
       }
       acts += '<button class="ext" onclick="showExt(\'' + b.id + '\')">Add time</button>' +
