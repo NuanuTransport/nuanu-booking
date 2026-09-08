@@ -7,7 +7,8 @@
 <style>
 :root{
   --ink:#17251E; --paper:#F1F3EF; --card:#fff;
-  --line:#C9D2CB; --muted:#5C6B62; --moss:#2E6B4C; --stop:#B03A2E; --blue:#2F4E8F;
+  --line:#C9D2CB; --muted:#5C6B62; --moss:#2E6B4C; --stop:#B03A2E;
+  --blue:#2F4E8F; --amber:#B07D00;
 }
 *{box-sizing:border-box}
 body{
@@ -16,14 +17,30 @@ body{
 }
 .bar{
   display:flex;justify-content:space-between;align-items:center;
-  padding:14px 22px;background:var(--ink);color:#fff;
+  padding:13px 22px;background:var(--ink);color:#fff;flex-wrap:wrap;gap:12px;
 }
-.bar h1{font-size:19px;margin:0;font-weight:600}
+.bar h1{font-size:18px;margin:0;font-weight:600}
+.bar .sub{font-size:13px;opacity:.7}
 .bar .clock{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums}
-.bar .date{font-size:13px;opacity:.7}
+
+.tools{
+  display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  padding:12px 22px;background:#E4EAE4;border-bottom:1px solid var(--line);
+}
+.tools button{
+  padding:9px 16px;font-size:14px;font-weight:600;font-family:inherit;
+  background:var(--card);color:var(--muted);
+  border:1px solid var(--line);border-radius:6px;cursor:pointer;
+}
+.tools button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.tools select{
+  padding:9px 12px;font-size:14px;font-family:inherit;min-width:190px;
+  border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);
+}
+.tools .spacer{flex:1}
 
 .grid{
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
   gap:14px;padding:18px 22px 40px;
 }
 .job{
@@ -31,17 +48,22 @@ body{
   border-radius:8px;padding:15px;
 }
 .job.ONGOING{border-left-color:var(--blue);background:#F7F9FD}
-.job .time{font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+.job.COMPLETED{border-left-color:var(--muted);opacity:.75}
+.job.CANCELLED,.job.NOSHOW,.job.REJECTED{border-left-color:var(--stop);opacity:.75}
+.job.PENDING{border-left-color:var(--amber)}
+.job .when{font-size:13px;color:var(--muted);font-weight:600}
+.job .time{font-size:21px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.15}
 .job .id{font-size:12px;color:var(--muted);margin-top:2px}
-.job .driver{font-size:17px;font-weight:600;margin-top:10px}
-.job p{margin:5px 0 0;font-size:14.5px;color:var(--muted)}
-.job .live{
-  display:inline-block;margin-top:9px;font-size:12px;font-weight:600;
-  background:#E8EDF6;color:var(--blue);padding:3px 9px;border-radius:20px;
+.job .driver{font-size:16px;font-weight:600;margin-top:9px}
+.job p{margin:5px 0 0;font-size:14px;color:var(--muted)}
+.job .tag{
+  display:inline-block;margin-top:9px;font-size:11.5px;font-weight:600;
+  padding:3px 9px;border-radius:20px;background:#E4EAE4;color:var(--muted);
 }
-.acts{display:flex;gap:9px;margin-top:14px}
+.job .tag.ONGOING{background:#E8EDF6;color:var(--blue)}
+.acts{display:flex;gap:9px;margin-top:13px}
 .acts button{
-  flex:1;padding:13px 6px;font-size:15px;font-weight:600;font-family:inherit;
+  flex:1;padding:12px 6px;font-size:14.5px;font-weight:600;font-family:inherit;
   border-radius:6px;cursor:pointer;border:0;color:#fff;
 }
 .go{background:var(--moss)}
@@ -49,7 +71,7 @@ body{
 .cxl{background:var(--card);border:1px solid var(--stop);color:var(--stop)}
 .acts button:disabled{opacity:.5;cursor:wait}
 
-.empty{padding:70px 22px;text-align:center;color:var(--muted);font-size:18px}
+.empty{padding:60px 22px;text-align:center;color:var(--muted);font-size:17px}
 #toast{
   position:fixed;left:50%;bottom:26px;transform:translateX(-50%);
   background:var(--ink);color:#fff;padding:13px 22px;border-radius:8px;
@@ -62,9 +84,18 @@ body{
 <div class="bar">
   <div>
     <h1>Dispatch Board</h1>
-    <div class="date" id="date"></div>
+    <div class="sub" id="title"></div>
   </div>
   <div class="clock" id="clock">--:--</div>
+</div>
+
+<div class="tools">
+  <button id="b-today" class="on" onclick="setMode('today')">Today</button>
+  <button id="b-yesterday" onclick="setMode('yesterday')">Yesterday</button>
+  <span class="spacer"></span>
+  <select id="driver" onchange="pickDriver()">
+    <option value="">Search by driver…</option>
+  </select>
 </div>
 
 <div id="body"><p class="empty">Loading…</p></div>
@@ -74,12 +105,16 @@ body{
 /* ==========================================================
    PASTE YOUR APPS SCRIPT /exec URL BETWEEN THE QUOTES BELOW
    ========================================================== */
-var API_URL = 'https://script.google.com/macros/s/AKfycbzgpjJpb96wLeKH0mHQfNJmtgk7nbuj34zpUxATGDRM_ReShbIVz-kegSBIdElie4dt/exec';;
+var API_URL = 'https://script.google.com/macros/s/AKfycbzgpjJpb96wLeKH0mHQfNJmtgk7nbuj34zpUxATGDRM_ReShbIVz-kegSBIdElie4dt/exec';
 /* ========================================================== */
 
 var TOKEN = '';
 try { TOKEN = new URLSearchParams(location.search).get('t') || ''; }
 catch (e) { var m = location.search.match(/[?&]t=([^&]+)/); TOKEN = m ? m[1] : ''; }
+
+var MODE = 'today';
+var DRIVER = '';
+var driversLoaded = false;
 
 function api(action, data) {
   var url = API_URL +
@@ -105,24 +140,63 @@ function tick() {
 tick();
 setInterval(tick, 20000);
 
-function load() {
-  api('board').then(function (r) {
-    var box = document.getElementById('body');
-    if (!r || !r.ok) { box.innerHTML = '<p class="empty">' + ((r && r.message) || 'Could not load.') + '</p>'; return; }
+function setMode(mode) {
+  MODE = mode;
+  DRIVER = '';
+  document.getElementById('driver').value = '';
+  document.getElementById('b-today').className = (mode === 'today' ? 'on' : '');
+  document.getElementById('b-yesterday').className = (mode === 'yesterday' ? 'on' : '');
+  load();
+}
 
-    document.getElementById('date').textContent = r.today || '';
+function pickDriver() {
+  var v = document.getElementById('driver').value;
+  if (!v) { setMode('today'); return; }
+  MODE = 'driver';
+  DRIVER = v;
+  document.getElementById('b-today').className = '';
+  document.getElementById('b-yesterday').className = '';
+  load();
+}
+
+function money(n) { return Number(n || 0).toLocaleString('id-ID'); }
+
+function load() {
+  api('board', { mode: MODE, driver: DRIVER }).then(function (r) {
+    var box = document.getElementById('body');
+    if (!r || !r.ok) {
+      box.innerHTML = '<p class="empty">' + ((r && r.message) || 'Could not load.') + '</p>';
+      return;
+    }
+
+    document.getElementById('title').textContent = r.title || '';
+
+    if (!driversLoaded && r.drivers && r.drivers.length) {
+      document.getElementById('driver').innerHTML =
+        '<option value="">Search by driver…</option>' +
+        r.drivers.map(function (d) { return '<option>' + d + '</option>'; }).join('');
+      driversLoaded = true;
+    }
 
     if (!r.jobs.length) {
-      box.innerHTML = '<p class="empty">No jobs scheduled for today.</p>';
+      box.innerHTML = '<p class="empty">' +
+        (MODE === 'driver' ? 'No upcoming jobs for this driver.' : 'Nothing here.') + '</p>';
       return;
     }
 
     box.innerHTML = '<div class="grid">' + r.jobs.map(function (j) {
-      var acts = (j.status === 'ONGOING')
-        ? '<button class="fin" onclick="act(\'finish\',\'' + j.id + '\',this)">Finish trip</button>'
-        : '<button class="go" onclick="act(\'go\',\'' + j.id + '\',this)">Start trip</button>';
+      var acts = '';
+      if (j.live) {
+        acts = (j.status === 'ONGOING')
+          ? '<button class="fin" onclick="act(\'finish\',\'' + j.id + '\',this)">Finish trip</button>'
+          : '<button class="go" onclick="act(\'go\',\'' + j.id + '\',this)">Start trip</button>';
+        acts += '<button class="cxl" onclick="act(\'cancel\',\'' + j.id + '\',this)">Cancel</button>';
+      }
 
-      return '<div class="job ' + j.status + '">' +
+      var cls = j.status.replace(/ /g, '');
+
+      return '<div class="job ' + cls + '">' +
+        (MODE === 'today' ? '' : '<div class="when">' + j.dateShort + '</div>') +
         '<div class="time">' + j.start + ' – ' + j.end + '</div>' +
         '<div class="id">' + j.id + '</div>' +
         '<div class="driver">' + j.driver + '</div>' +
@@ -130,10 +204,11 @@ function load() {
         '<p>' + j.pickup + ' \u2192 ' + j.dropoff + '</p>' +
         '<p>' + j.req + '</p>' +
         (j.purpose && j.purpose !== '-' ? '<p>' + j.purpose + '</p>' : '') +
-        (j.astart ? '<span class="live">Running since ' + j.astart + '</span>' : '') +
-        '<div class="acts">' + acts +
-          '<button class="cxl" onclick="act(\'cancel\',\'' + j.id + '\',this)">Cancel</button>' +
-        '</div></div>';
+        (j.astart ? '<p>Ran ' + j.astart + (j.aend ? ' – ' + j.aend : ' — still out') + '</p>' : '') +
+        (j.total ? '<p>' + money(j.total) + '</p>' : '') +
+        '<span class="tag ' + cls + '">' + j.status + '</span>' +
+        (acts ? '<div class="acts">' + acts + '</div>' : '') +
+      '</div>';
     }).join('') + '</div>';
   }).catch(function (err) {
     document.getElementById('body').innerHTML =
@@ -141,20 +216,8 @@ function load() {
   });
 }
 
-function act(what, id, btn) {
-  if (what === 'cancel' && !confirm('Cancel ' + id + '?')) return;
-  btn.disabled = true;
-  api(what, { id: id, reason: 'from dispatch board' }).then(function (res) {
-    toast(res && res.message ? res.message : 'Done');
-    load();
-  }).catch(function (err) {
-    toast('Failed: ' + err.message);
-    btn.disabled = false;
-  });
-}
-
 load();
-setInterval(load, 60000);
+setInterval(function () { if (MODE === 'today') load(); }, 60000);
 </script>
 </body>
 </html>
