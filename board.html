@@ -91,7 +91,7 @@ body{
 
 <div class="tools">
   <button id="b-today" class="on" onclick="setMode('today')">Today</button>
-  <button id="b-yesterday" onclick="setMode('yesterday')">Yesterday</button>
+  <button id="b-tomorrow" onclick="setMode('tomorrow')">Tomorrow</button>
   <span class="spacer"></span>
   <select id="driver" onchange="pickDriver()">
     <option value="">Search by driver…</option>
@@ -145,7 +145,7 @@ function setMode(mode) {
   DRIVER = '';
   document.getElementById('driver').value = '';
   document.getElementById('b-today').className = (mode === 'today' ? 'on' : '');
-  document.getElementById('b-yesterday').className = (mode === 'yesterday' ? 'on' : '');
+  document.getElementById('b-tomorrow').className = (mode === 'tomorrow' ? 'on' : '');
   load();
 }
 
@@ -155,7 +155,7 @@ function pickDriver() {
   MODE = 'driver';
   DRIVER = v;
   document.getElementById('b-today').className = '';
-  document.getElementById('b-yesterday').className = '';
+  document.getElementById('b-tomorrow').className = '';
   load();
 }
 
@@ -180,7 +180,7 @@ function load() {
 
     if (!r.jobs.length) {
       box.innerHTML = '<p class="empty">' +
-        (MODE === 'driver' ? 'No upcoming jobs for this driver.' : 'Nothing here.') + '</p>';
+        (MODE === 'driver' ? 'No open jobs for this driver.' : 'Nothing scheduled.') + '</p>';
       return;
     }
 
