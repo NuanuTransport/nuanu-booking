@@ -1,1 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bill of Quantities</title>
+<style>
+:root{
+  --ink:#17251E; --paper:#F1F3EF; --card:#fff;
+  --line:#C9D2CB; --muted:#5C6B62; --moss:#2E6B4C; --blue:#1F3A93;
+}
+*{box-sizing:border-box}
+html{width:100%;overflow-x:hidden}
+body{
+  margin:0;padding:0;width:100%;max-width:100vw;overflow-x:hidden;
+  -webkit-text-size-adjust:100%;
+  background:var(--paper);color:var(--ink);
+  font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:15px;line-height:1.5;
+}
+.wrap{width:100%;max-width:520px;margin:0 auto;padding:20px 16px 70px;overflow:hidden}
+h1{font-size:21px;margin:0 0 2px}
+.sub{color:var(--muted);font-size:13.5px;margin:0 0 22px}
+
+.field{margin-bottom:16px;overflow:hidden}
+label{display:block;font-weight:600;font-size:14px;margin-bottom:6px}
+input,select{
+  display:block;width:100%;min-width:0;max-width:100%;padding:11px 12px;
+  font-size:16px;font-family:inherit;
+  border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);
+}
+input[type=date]{
+  width:100% !important;-webkit-appearance:none;appearance:none;height:44px;line-height:22px;
+}
+input:focus,select:focus{outline:2px solid var(--moss);outline-offset:-1px}
+
+button.go{
+  display:block;width:100%;padding:14px;font-size:16px;font-weight:600;font-family:inherit;
+  background:var(--blue);color:#fff;border:0;border-radius:6px;cursor:pointer;margin-top:8px;
+}
+button.go:disabled{opacity:.55}
+
+#msg{
+  display:none;padding:12px 14px;border-radius:6px;margin-bottom:16px;font-size:14px;
+  background:#F6E3E0;border:1px solid #E2B7B0;color:#7A2A20;white-space:pre-line;
+}
+#msg.good{background:#E4EFE7;border-color:#B4D2BE;color:#1F4B34}
+
+#result{display:none;background:var(--card);border:1px solid var(--line);
+  border-left:5px solid var(--blue);border-radius:8px;padding:18px;margin-top:18px}
+#result h2{margin:0 0 6px;font-size:18px}
+#result p{margin:0;color:var(--muted);font-size:14px}
+#result a{
+  display:block;margin-top:14px;padding:13px;text-align:center;text-decoration:none;
+  background:var(--moss);color:#fff;border-radius:6px;font-weight:600;
+}
+.hint{color:var(--muted);font-size:12.5px;margin-top:16px}
+#boot{padding:50px 18px;text-align:center;color:var(--muted)}
+#app{display:none}
+</style>
+</head>
+<body>
+
+<div id="boot">Loading…</div>
+
+<div id="app" class="wrap">
+  <h1>Bill of Quantities</h1>
+  <p class="sub">Generate a BOQ from bookings already in the system.</p>
+
+  <div id="msg"></div>
+
+  <div class="field">
+    <label>Department</label>
+    <select id="dept"></select>
+  </div>
+
+  <div class="field">
+    <label>Requester</label>
+    <select id="requester"></select>
+  </div>
+
+  <div class="field">
+    <label>From</label>
+    <input type="date" id="from">
+  </div>
+
+  <div class="field">
+    <label>To</label>
+    <input type="date" id="to">
+  </div>
+
+  <button class="go" id="btn" onclick="make()">Generate BOQ</button>
+
+  <div id="result">
+    <h2>Ready</h2>
+    <p id="rline"></p>
+    <a id="rlink" href="#" target="_blank">Open the PDF</a>
+  </div>
+
+  <p class="hint">
+    Cancelled and no-show bookings appear only if a charge was applied.
+    Pending bookings are left out.
+  </p>
+</div>
+
+<script>
+/* ==========================================================
+   PASTE YOUR APPS SCRIPT /exec URL BETWEEN THE QUOTES BELOW
+   ========================================================== */
+var API_URL = 'PASTE_YOUR_EXEC_URL_HERE';
+/* ========================================================== */
+
+var TOKEN = '';
+try { TOKEN = new URLSearchParams(location.search).get('t') || ''; }
+catch (e) { var m = location.search.match(/[?&]t=([^&]+)/); TOKEN = m ? m[1] : ''; }
+
+function api(action, data) {
+  var url = API_URL +
+    '?action=' + encodeURIComponent(action) +
+    '&t=' + encodeURIComponent(TOKEN) +
+    '&data=' + encodeURIComponent(JSON.stringify(data || {})) +
+    '&cb=' + Date.now();
+  return fetch(url).then(function (r) { return r.json(); });
+}
+
+function showMsg(text, good) {
+  var m = document.getElementById('msg');
+  m.textContent = text;
+  m.className = good ? 'good' : '';
+  m.style.display = 'block';
+  window.scrollTo(0, 0);
+}
+
+api('boqinfo').then(function (r) {
+  if (!r || !r.ok) {
+    document.getElementById('boot').textContent = (r && r.message) || 'Could not load.';
+    return;
+  }
+
+  document.getElementById('dept').innerHTML =
+    '<option value="">All departments</option>' +
+    r.departments.map(function (d) { return '<option>' + d + '</option>'; }).join('');
+
+  document.getElementById('requester').innerHTML =
+    '<option value="">Everyone</option>' +
+    r.requesters.map(function (p) { return '<option>' + p + '</option>'; }).join('');
+
+  var d = new Date();
+  var first = new Date(d.getFullYear(), d.getMonth(), 1);
+  document.getElementById('from').value = first.toISOString().slice(0, 10);
+  document.getElementById('to').value = r.today;
+
+  document.getElementById('boot').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+}).catch(function (err) {
+  document.getElementById('boot').textContent = 'Could not reach the server. ' + err.message;
+});
+
+function make() {
+  var btn = document.getElementById('btn');
+  document.getElementById('msg').style.display = 'none';
+  document.getElementById('result').style.display = 'none';
+
+  btn.disabled = true;
+  btn.textContent = 'Building the PDF…';
+
+  api('boq', {
+    dept: document.getElementById('dept').value,
+    requester: document.getElementById('requester').value,
+    from: document.getElementById('from').value,
+    to: document.getElementById('to').value
+  }).then(function (res) {
+    if (res && res.ok) {
+      document.getElementById('rline').textContent = res.message;
+      document.getElementById('rlink').href = res.url;
+      document.getElementById('result').style.display = 'block';
+    } else {
+      showMsg(res ? res.message : 'Something went wrong.');
+    }
+    btn.disabled = false;
+    btn.textContent = 'Generate BOQ';
+  }).catch(function (err) {
+    showMsg('Failed: ' + err.message);
+    btn.disabled = false;
+    btn.textContent = 'Generate BOQ';
+  });
+}
+</script>
+</body>
+</html>
 
