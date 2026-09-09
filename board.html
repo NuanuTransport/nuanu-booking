@@ -17,30 +17,26 @@ body{
 }
 .bar{
   display:flex;justify-content:space-between;align-items:center;
-  padding:13px 22px;background:var(--ink);color:#fff;flex-wrap:wrap;gap:12px;
+  padding:12px 22px;background:var(--ink);color:#fff;
 }
 .bar h1{font-size:18px;margin:0;font-weight:600}
 .bar .sub{font-size:13px;opacity:.7}
 .bar .clock{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums}
 
-.tools{
-  display:flex;gap:10px;align-items:center;flex-wrap:wrap;
-  padding:12px 22px;background:#E4EAE4;border-bottom:1px solid var(--line);
+nav{display:flex;gap:6px;padding:12px 22px 0;background:var(--ink)}
+nav button{
+  padding:9px 18px;font-size:14px;font-weight:600;font-family:inherit;
+  background:rgba(255,255,255,.12);color:#fff;border:0;
+  border-radius:7px 7px 0 0;cursor:pointer;
 }
-.tools button{
-  padding:9px 16px;font-size:14px;font-weight:600;font-family:inherit;
-  background:var(--card);color:var(--muted);
-  border:1px solid var(--line);border-radius:6px;cursor:pointer;
+nav button.on{background:var(--paper);color:var(--ink)}
+nav .count{
+  display:inline-block;margin-left:7px;background:var(--stop);color:#fff;
+  border-radius:20px;padding:1px 7px;font-size:12px;
 }
-.tools button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
-.tools select{
-  padding:9px 12px;font-size:14px;font-family:inherit;min-width:190px;
-  border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);
-}
-.tools .spacer{flex:1}
 
 .grid{
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));
   gap:14px;padding:18px 22px 40px;
 }
 .job{
@@ -48,22 +44,19 @@ body{
   border-radius:8px;padding:15px;
 }
 .job.ONGOING{border-left-color:var(--blue);background:#F7F9FD}
-.job.COMPLETED{border-left-color:var(--muted);opacity:.75}
-.job.CANCELLED,.job.NOSHOW,.job.REJECTED{border-left-color:var(--stop);opacity:.75}
-.job.PENDING{border-left-color:var(--amber)}
-.job .when{font-size:13px;color:var(--muted);font-weight:600}
+.job.PENDING{border-left-color:var(--amber);background:#FDFBF5}
 .job .time{font-size:21px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.15}
 .job .id{font-size:12px;color:var(--muted);margin-top:2px}
-.job .driver{font-size:16px;font-weight:600;margin-top:9px}
-.job p{margin:5px 0 0;font-size:14px;color:var(--muted)}
-.job .tag{
-  display:inline-block;margin-top:9px;font-size:11.5px;font-weight:600;
-  padding:3px 9px;border-radius:20px;background:#E4EAE4;color:var(--muted);
+.job .driver{font-size:17px;font-weight:600;margin-top:10px}
+.job .driver.none{color:var(--amber)}
+.job p{margin:5px 0 0;font-size:14.5px;color:var(--muted)}
+.job .live{
+  display:inline-block;margin-top:9px;font-size:12px;font-weight:600;
+  background:#E8EDF6;color:var(--blue);padding:3px 9px;border-radius:20px;
 }
-.job .tag.ONGOING{background:#E8EDF6;color:var(--blue)}
-.acts{display:flex;gap:9px;margin-top:13px}
+.acts{display:flex;gap:9px;margin-top:14px;flex-wrap:wrap}
 .acts button{
-  flex:1;padding:12px 6px;font-size:14.5px;font-weight:600;font-family:inherit;
+  flex:1 1 120px;padding:12px 6px;font-size:15px;font-weight:600;font-family:inherit;
   border-radius:6px;cursor:pointer;border:0;color:#fff;
 }
 .go{background:var(--moss)}
@@ -71,7 +64,16 @@ body{
 .cxl{background:var(--card);border:1px solid var(--stop);color:var(--stop)}
 .acts button:disabled{opacity:.5;cursor:wait}
 
-.empty{padding:60px 22px;text-align:center;color:var(--muted);font-size:17px}
+.pick{margin-top:12px;display:none}
+.pick.on{display:block}
+.pick p{margin:0 0 7px;font-size:13px;font-weight:600;color:var(--ink)}
+.pick .names{display:flex;flex-wrap:wrap;gap:7px}
+.pick .names button{
+  flex:0 0 auto;padding:9px 13px;font-size:14px;font-weight:600;font-family:inherit;
+  background:var(--moss);color:#fff;border:0;border-radius:6px;cursor:pointer;
+}
+
+.empty{padding:70px 22px;text-align:center;color:var(--muted);font-size:18px}
 #toast{
   position:fixed;left:50%;bottom:26px;transform:translateX(-50%);
   background:var(--ink);color:#fff;padding:13px 22px;border-radius:8px;
@@ -84,19 +86,16 @@ body{
 <div class="bar">
   <div>
     <h1>Dispatch Board</h1>
-    <div class="sub" id="title"></div>
+    <div class="sub" id="label"></div>
   </div>
   <div class="clock" id="clock">--:--</div>
 </div>
 
-<div class="tools">
-  <button id="b-today" class="on" onclick="setMode('today')">Today</button>
-  <button id="b-tomorrow" onclick="setMode('tomorrow')">Tomorrow</button>
-  <span class="spacer"></span>
-  <select id="driver" onchange="pickDriver()">
-    <option value="">Search by driver…</option>
-  </select>
-</div>
+<nav>
+  <button id="tab-today" class="on" onclick="go('today')">Today</button>
+  <button id="tab-tomorrow" onclick="go('tomorrow')">Tomorrow</button>
+  <button id="tab-pending" onclick="go('pending')">Waiting<span class="count" id="pcount" style="display:none">0</span></button>
+</nav>
 
 <div id="body"><p class="empty">Loading…</p></div>
 <div id="toast"></div>
@@ -112,9 +111,8 @@ var TOKEN = '';
 try { TOKEN = new URLSearchParams(location.search).get('t') || ''; }
 catch (e) { var m = location.search.match(/[?&]t=([^&]+)/); TOKEN = m ? m[1] : ''; }
 
-var MODE = 'today';
-var DRIVER = '';
-var driversLoaded = false;
+var VIEW = 'today';
+var DRIVERS = [];
 
 function api(action, data) {
   var url = API_URL +
@@ -129,7 +127,7 @@ function toast(text) {
   var t = document.getElementById('toast');
   t.textContent = text;
   t.style.display = 'block';
-  setTimeout(function () { t.style.display = 'none'; }, 4000);
+  setTimeout(function () { t.style.display = 'none'; }, 4500);
 }
 
 function tick() {
@@ -140,74 +138,67 @@ function tick() {
 tick();
 setInterval(tick, 20000);
 
-function setMode(mode) {
-  MODE = mode;
-  DRIVER = '';
-  document.getElementById('driver').value = '';
-  document.getElementById('b-today').className = (mode === 'today' ? 'on' : '');
-  document.getElementById('b-tomorrow').className = (mode === 'tomorrow' ? 'on' : '');
+function go(which) {
+  VIEW = which;
+  ['today', 'tomorrow', 'pending'].forEach(function (n) {
+    document.getElementById('tab-' + n).className = (n === which ? 'on' : '');
+  });
   load();
 }
 
-function pickDriver() {
-  var v = document.getElementById('driver').value;
-  if (!v) { setMode('today'); return; }
-  MODE = 'driver';
-  DRIVER = v;
-  document.getElementById('b-today').className = '';
-  document.getElementById('b-tomorrow').className = '';
-  load();
-}
-
-function money(n) { return Number(n || 0).toLocaleString('id-ID'); }
+api('drivers').then(function (r) {
+  if (r && r.ok) DRIVERS = r.drivers;
+});
 
 function load() {
-  api('board', { mode: MODE, driver: DRIVER }).then(function (r) {
+  api('board', { when: VIEW }).then(function (r) {
     var box = document.getElementById('body');
     if (!r || !r.ok) {
       box.innerHTML = '<p class="empty">' + ((r && r.message) || 'Could not load.') + '</p>';
       return;
     }
 
-    document.getElementById('title').textContent = r.title || '';
-
-    if (!driversLoaded && r.drivers && r.drivers.length) {
-      document.getElementById('driver').innerHTML =
-        '<option value="">Search by driver…</option>' +
-        r.drivers.map(function (d) { return '<option>' + d + '</option>'; }).join('');
-      driversLoaded = true;
-    }
+    document.getElementById('label').textContent = r.label || '';
 
     if (!r.jobs.length) {
       box.innerHTML = '<p class="empty">' +
-        (MODE === 'driver' ? 'No open jobs for this driver.' : 'Nothing scheduled.') + '</p>';
+        (VIEW === 'pending' ? 'Nothing waiting for a driver.' : 'No jobs for this day.') + '</p>';
+      if (VIEW === 'pending') setCount(0);
       return;
     }
+    if (VIEW === 'pending') setCount(r.jobs.length);
 
     box.innerHTML = '<div class="grid">' + r.jobs.map(function (j) {
       var acts = '';
-      if (j.live) {
-        acts = (j.status === 'ONGOING')
-          ? '<button class="fin" onclick="act(\'finish\',\'' + j.id + '\',this)">Finish trip</button>'
-          : '<button class="go" onclick="act(\'go\',\'' + j.id + '\',this)">Start trip</button>';
-        acts += '<button class="cxl" onclick="act(\'cancel\',\'' + j.id + '\',this)">Cancel</button>';
+
+      if (j.status === 'PENDING') {
+        acts = '<button class="go" onclick="showPick(\'' + j.id + '\')">Assign driver</button>';
+      } else if (j.status === 'ONGOING') {
+        acts = '<button class="fin" onclick="act(\'finish\',\'' + j.id + '\',this)">Finish trip</button>';
+      } else {
+        acts = '<button class="go" onclick="act(\'go\',\'' + j.id + '\',this)">Start trip</button>';
       }
+      acts += '<button class="cxl" onclick="act(\'cancel\',\'' + j.id + '\',this)">Cancel</button>';
 
-      var cls = j.status.replace(/ /g, '');
+      var who = j.selfDrive ? 'SELF DRIVE' : (j.driver || 'no driver yet');
 
-      return '<div class="job ' + cls + '">' +
-        (MODE === 'today' ? '' : '<div class="when">' + j.dateShort + '</div>') +
-        '<div class="time">' + j.start + ' – ' + j.end + '</div>' +
-        '<div class="id">' + j.id + '</div>' +
-        '<div class="driver">' + j.driver + '</div>' +
+      return '<div class="job ' + j.status + '">' +
+        '<div class="time">' + j.start + ' \u2013 ' + j.end + '</div>' +
+        '<div class="id">' + j.id + ' \u00b7 ' + j.date + ' \u00b7 ' + j.status + '</div>' +
+        '<div class="driver' + (j.driver || j.selfDrive ? '' : ' none') + '">' + who + '</div>' +
         '<p>' + j.vehicle + '</p>' +
         '<p>' + j.pickup + ' \u2192 ' + j.dropoff + '</p>' +
         '<p>' + j.req + '</p>' +
-        (j.purpose && j.purpose !== '-' ? '<p>' + j.purpose + '</p>' : '') +
-        (j.astart ? '<p>Ran ' + j.astart + (j.aend ? ' – ' + j.aend : ' — still out') + '</p>' : '') +
-        (j.total ? '<p>' + money(j.total) + '</p>' : '') +
-        '<span class="tag ' + cls + '">' + j.status + '</span>' +
-        (acts ? '<div class="acts">' + acts + '</div>' : '') +
+        (j.purpose ? '<p>' + j.purpose + '</p>' : '') +
+        (j.astart ? '<span class="live">Running since ' + j.astart + '</span>' : '') +
+        '<div class="acts">' + acts + '</div>' +
+        '<div class="pick" id="pick-' + j.id + '">' +
+          '<p>Which driver?</p><div class="names">' +
+          DRIVERS.map(function (d) {
+            return '<button onclick="assign(\'' + j.id + '\',\'' + d.id + '\')">' + d.name + '</button>';
+          }).join('') +
+          (DRIVERS.length ? '' : '<span style="color:#5C6B62;font-size:14px">No active drivers in People.</span>') +
+        '</div></div>' +
       '</div>';
     }).join('') + '</div>';
   }).catch(function (err) {
@@ -216,8 +207,46 @@ function load() {
   });
 }
 
+function setCount(n) {
+  var el = document.getElementById('pcount');
+  el.textContent = n;
+  el.style.display = n ? 'inline-block' : 'none';
+}
+
+function showPick(id) {
+  var el = document.getElementById('pick-' + id);
+  el.className = (el.className.indexOf('on') > -1) ? 'pick' : 'pick on';
+}
+
+function assign(id, driverId) {
+  api('assign', { id: id, driverId: driverId }).then(function (res) {
+    toast(res && res.message ? res.message : 'Done');
+    load();
+  }).catch(function (err) { toast('Failed: ' + err.message); });
+}
+
+function act(what, id, btn) {
+  if (what === 'cancel' && !confirm('Cancel ' + id + '?')) return;
+  btn.disabled = true;
+  api(what, { id: id, reason: 'from dispatch board' }).then(function (res) {
+    toast(res && res.message ? res.message : 'Done');
+    load();
+  }).catch(function (err) {
+    toast('Failed: ' + err.message);
+    btn.disabled = false;
+  });
+}
+
+function refreshCount() {
+  api('board', { when: 'pending' }).then(function (r) {
+    if (r && r.ok) setCount(r.jobs.length);
+  });
+}
+refreshCount();
+setInterval(refreshCount, 60000);
+
 load();
-setInterval(function () { if (MODE === 'today') load(); }, 60000);
+setInterval(load, 60000);
 </script>
 </body>
 </html>
