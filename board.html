@@ -91,6 +91,12 @@ nav .count{
   <div class="clock" id="clock">--:--</div>
 </div>
 
+<select id="dfilter" onchange="load()"
+    style="margin-left:auto;align-self:center;padding:8px 10px;border-radius:6px;
+           border:0;font-family:inherit;font-size:14px">
+    <option value="">All drivers</option>
+  </select>
+  
 <nav>
   <button id="tab-today" class="on" onclick="go('today')">Today</button>
   <button id="tab-tomorrow" onclick="go('tomorrow')">Tomorrow</button>
@@ -147,11 +153,19 @@ function go(which) {
 }
 
 api('drivers').then(function (r) {
-  if (r && r.ok) DRIVERS = r.drivers;
-});
-
+       if (!r || !r.ok) return;
+       DRIVERS = r.drivers;
+       var sel = document.getElementById('dfilter');
+       sel.innerHTML = '<option value="">All drivers</option>' +
+         DRIVERS.map(function (d) {
+           return '<option value="' + d.id + '">' + d.name + '</option>';
+         }).join('');
+       if (r.role === 'driver') sel.style.display = 'none';
+     });
+  
 function load() {
-  api('board', { when: VIEW }).then(function (r) {
+  var who = document.getElementById('dfilter').value;
+     api('board', { when: VIEW, driverId: who }).then(function (r) {
     var box = document.getElementById('body');
     if (!r || !r.ok) {
       box.innerHTML = '<p class="empty">' + ((r && r.message) || 'Could not load.') + '</p>';
