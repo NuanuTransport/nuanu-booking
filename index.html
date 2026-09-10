@@ -154,9 +154,11 @@ dl.me dd{margin:2px 0 0;color:var(--muted);word-break:break-word}
           <label class="choice"><input type="radio" name="type" value="6-seater" checked><span>6-seater</span></label>
           <label class="choice"><input type="radio" name="type" value="13-seater"><span>13-seater</span></label>
           <label class="choice"><input type="radio" name="type" value="23-seater"><span>23-seater</span></label>
+          <label class="choice"><input type="radio" name="type" value="cargo"><span>Cargo</span></label>
+          <label class="choice"><input type="radio" name="type" value="motorcycle"><span>Motorcycle</span></label>
         </div>
       </div>
-
+      
       <div class="field">
         <label>Driver <span class="hint">— self drive is 6-seater only</span></label>
         <div class="choices">
@@ -303,13 +305,19 @@ function hideMsg() { document.getElementById('msg').style.display = 'none'; }
 var typeRadios = document.getElementsByName('type');
 for (var i = 0; i < typeRadios.length; i++) {
   typeRadios[i].addEventListener('change', function () {
-    var six = (this.value === '6-seater');
+    var v = this.value;
+    var canSelf = (v === '6-seater' || v === 'cargo' || v === 'motorcycle');
+    var mustSelf = (v === 'motorcycle');
     var self = document.getElementById('selfOpt');
-    self.disabled = !six;
-    if (!six && self.checked) document.querySelector('input[name=driver][value=with]').checked = true;
+    var withD = document.querySelector('input[name=driver][value=with]');
+
+    self.disabled = !canSelf;
+    withD.disabled = mustSelf;
+    if (mustSelf) self.checked = true;
+    else if (!canSelf && self.checked) withD.checked = true;
   });
 }
-
+  
 function other(which) {
   var sel = document.getElementById(which);
   var box = document.getElementById(which + 'Other');
