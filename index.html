@@ -122,9 +122,8 @@ dl.me dd{margin:2px 0 0;color:var(--muted);word-break:break-word}
 </head>
 <body>
 
-<div id="boot">Starting…</div>
-
-<div id="app" class="wrap">
+<div id="boot" style="display:none"></div>
+<div id="app" class="wrap" style="display:block">
   <header>
     <h1>Vehicle Work Order Transport</h1>
     <p id="wholine"></p>
@@ -256,10 +255,17 @@ function start() {
   if (API_URL.indexOf('PASTE_') === 0) { boot('This page is not finished.', 'API_URL was never filled in.'); return; }
   if (!TOKEN) { boot('This link is not valid. Send /book to the bot for a new one.'); return; }
 
-  boot('Loading your details…');
+  var btn = document.getElementById('btn');
+  btn.disabled = true;
+  btn.textContent = 'Loading…';
 
   api('init').then(function (r) {
-    if (!r || !r.ok) { boot((r && r.message) || 'Could not load.'); return; }
+    if (!r || !r.ok) {
+      document.getElementById('app').style.display = 'none';
+      document.getElementById('boot').style.display = 'block';
+      boot((r && r.message) || 'Could not load.');
+      return;
+    }
 
     ON_BEHALF = r.onBehalf === true;
     document.getElementById('wholine').textContent =
@@ -274,9 +280,12 @@ function start() {
         '<option value="__other">Other — type it</option>';
     });
 
-    document.getElementById('boot').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Submit booking';
+
   }).catch(function (err) {
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('boot').style.display = 'block';
     boot('Could not reach the server.', 'Error: ' + err.message + '<br><br>API_URL: ' + API_URL);
   });
 }
