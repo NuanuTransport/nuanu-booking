@@ -160,15 +160,26 @@ function isoToday() {
   return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
 }
 
-function api(action, data) {
+function api(action, data, retry) {
   var url = API_URL +
     '?action=' + encodeURIComponent(action) +
     '&t=' + encodeURIComponent(TOKEN) +
     '&data=' + encodeURIComponent(JSON.stringify(data || {})) +
     '&cb=' + Date.now();
-  return fetch(url).then(function (r) { return r.json(); });
-}
 
+  return fetch(url).then(function (r) { return r.text(); }).then(function (txt) {
+    try {
+      return JSON.parse(txt);
+    } catch (e) {
+      if (!retry) {
+        return new Promise(function (res) {
+          setTimeout(function () { res(api(action, data, true)); }, 1200);
+        });
+      }
+      throw new Error('Server was busy. Try again in a moment.');
+    }
+  });
+}
 function toast(text) {
   var t = document.getElementById('toast');
   t.textContent = text;
@@ -484,8 +495,8 @@ function refreshCount() {
     if (r && r.ok) setCount(r.jobs.length);
   });
 }
-refreshCount();
-setInterval(refreshCount, 60000);
+setTimeout(refreshCount, 2500);
+setInterval(refreshCount, 180000);
 
 load();
 setInterval(function () { if (VIEW !== 'calendar') load(); }, 60000);
