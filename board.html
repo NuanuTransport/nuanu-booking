@@ -204,23 +204,24 @@ function go(which) {
   load();
 }
 
-api('drivers').then(function (r) {
-  if (!r || !r.ok) return;
-  DRIVERS = r.drivers;
-  var sel = document.getElementById('dfilter');
-  sel.innerHTML = '<option value="">All drivers</option>' +
-    DRIVERS.map(function (d) { return '<option value="' + d.id + '">' + d.name + '</option>'; }).join('');
-  if (r.role === 'driver') sel.style.display = 'none';
-});
-
 function load() {
   if (VIEW === 'calendar') return loadCal();
 
   var who = document.getElementById('dfilter').value;
-  api('board', { when: VIEW, driverId: who }).then(function (r) {
+  api('boardinit', { when: VIEW, driverId: who }).then(function (r) {
     var box = document.getElementById('body');
     if (!r || !r.ok) { box.innerHTML = '<p class="empty">' + ((r && r.message) || 'Could not load.') + '</p>'; return; }
-
+    if (r.drivers && !DRIVERS.length) {
+         DRIVERS = r.drivers;
+         var sel = document.getElementById('dfilter');
+         sel.innerHTML = '<option value="">All drivers</option>' +
+           DRIVERS.map(function (d) {
+             return '<option value="' + d.id + '">' + d.name + '</option>';
+           }).join('');
+         if (r.role === 'driver') sel.style.display = 'none';
+       }
+       setCount(r.pending || 0);
+    
     document.getElementById('label').textContent = r.label || '';
 
     if (!r.jobs.length) {
@@ -495,8 +496,6 @@ function refreshCount() {
     if (r && r.ok) setCount(r.jobs.length);
   });
 }
-setTimeout(refreshCount, 2500);
-setInterval(refreshCount, 180000);
 
 load();
 setInterval(function () { if (VIEW !== 'calendar') load(); }, 60000);
