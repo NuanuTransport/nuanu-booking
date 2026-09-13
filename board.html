@@ -331,49 +331,60 @@ function loadCal() {
 }
 
 function dayView(r, types) {
-  var open = toMin(r.open), close = toMin(r.close);
-  if (close <= open) close = 24 * 60;
-  var span = close - open;
+  var OPEN = 6 * 60, CLOSE = 30 * 60, span = CLOSE - OPEN;   // 06:00 to 06:00
+  var anchor = r.from;
 
   var hours = [];
-  for (var h = Math.floor(open / 60); h <= Math.ceil(close / 60); h++) hours.push(h);
+  for (var h = 6; h <= 30; h += 2) hours.push(h);
 
   var head = '<tr><th class="rowhead">Vehicle</th><th>' +
     '<div style="display:flex;justify-content:space-between;font-size:11px;color:#5C6B62">' +
-    hours.map(function (h) { return '<span>' + ('0' + h).slice(-2) + '</span>'; }).join('') +
+    hours.map(function (h) { return '<span>' + ('0' + (h % 24)).slice(-2) + '</span>'; }).join('') +
     '</div></th></tr>';
 
   var rows = types.map(function (t) {
-    var mine = r.bookings.filter(function (b) { return b.type === t; });
+    var mine = [];
 
-    // stack overlapping bookings into lanes
+    r.bookings.forEach(function (b) {
+      if (b.type !== t) return;
+      var s = toMin(b.start), e = toMin(b.end);
+
+      if (b.date === anchor) {
+        if (e <= s) e += 1440;               // runs past midnight
+        if (e <= OPEN) return;               // finished before the window opens
+      } else {
+        s += 1440; e += 1440;                // next day, early hours
+        if (s >= CLOSE) return;
+      }
+      mine.push({ b: b, s: Math.max(OPEN, s), e: Math.min(CLOSE, e) });
+    });
+
     var lanes = [];
-    mine.sort(function (a, b) { return toMin(a.start) - toMin(b.start); });
-    mine.forEach(function (b) {
+    mine.sort(function (a, b) { return a.s - b.s; });
+    mine.forEach(function (x) {
       var placed = false;
       for (var i = 0; i < lanes.length && !placed; i++) {
-        if (toMin(b.start) >= lanes[i]) { lanes[i] = toMin(b.end); b.lane = i; placed = true; }
+        if (x.s >= lanes[i]) { lanes[i] = x.e; x.lane = i; placed = true; }
       }
-      if (!placed) { b.lane = lanes.length; lanes.push(toMin(b.end)); }
+      if (!placed) { x.lane = lanes.length; lanes.push(x.e); }
     });
 
     var laneCount = Math.max(1, lanes.length);
     var barH = Math.max(16, Math.floor(50 / laneCount));
 
-    var bars = mine.map(function (b) {
-      var s = Math.max(open, toMin(b.start)), e = Math.min(close, toMin(b.end));
-      if (e <= s) return '';
-      var left = ((s - open) / span * 100).toFixed(2);
-      var wide = ((e - s) / span * 100).toFixed(2);
-      var top = b.lane * (barH + 2) + 2;
-      return '<div class="bar2 ' + b.status + '" style="left:' + left + '%;width:' + wide +
-        '%;top:' + top + 'px;height:' + barH + 'px" title="' + b.id + ' — ' + b.req + '">' +
-        '<b>' + b.start + '</b> ' + (b.units > 1 ? 'x' + b.units + ' ' : '') + b.req + '</div>';
+    var bars = mine.map(function (x) {
+      if (x.e <= x.s) return '';
+      var left = ((x.s - OPEN) / span * 100).toFixed(2);
+      var wide = ((x.e - x.s) / span * 100).toFixed(2);
+      var top = x.lane * (barH + 2) + 2;
+      return '<div class="bar2 ' + x.b.status + '" style="left:' + left + '%;width:' + wide +
+        '%;top:' + top + 'px;height:' + barH + 'px" title="' + x.b.id + ' — ' + x.b.req + '">' +
+        '<b>' + x.b.start + '</b> ' + (x.b.units > 1 ? 'x' + x.b.units + ' ' : '') + x.b.req + '</div>';
     }).join('');
 
     var grid = hours.map(function (h) {
-      var pos = ((h * 60 - open) / span * 100).toFixed(2);
-      return (pos >= 0 && pos <= 100) ? '<div class="hourline" style="left:' + pos + '%"></div>' : '';
+      var pos = ((h * 60 - OPEN) / span * 100).toFixed(2);
+      return '<div class="hourline" style="left:' + pos + '%"></div>';
     }).join('');
 
     return '<tr><td class="rowhead">' + t + '<small>' + r.fleet[t] + ' available</small></td>' +
