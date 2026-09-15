@@ -204,39 +204,52 @@ function go(which) {
   load();
 }
 
+var FIRST = true;
+
 function load() {
   if (VIEW === 'calendar') return loadCal();
 
+  var box = document.getElementById('body');
+  if (FIRST) box.innerHTML = '<div class="grid">' +
+    '<div class="job" style="opacity:.35"><div class="time">--:-- – --:--</div>' +
+    '<div class="id">loading</div><div class="driver">&nbsp;</div><p>&nbsp;</p><p>&nbsp;</p></div>' +
+    '<div class="job" style="opacity:.2"><div class="time">--:-- – --:--</div>' +
+    '<div class="id">loading</div><div class="driver">&nbsp;</div><p>&nbsp;</p><p>&nbsp;</p></div>' +
+    '</div>';
+
   var who = document.getElementById('dfilter').value;
+
   api('boardinit', { when: VIEW, driverId: who }).then(function (r) {
-    var box = document.getElementById('body');
+    FIRST = false;
     if (!r || !r.ok) { box.innerHTML = '<p class="empty">' + ((r && r.message) || 'Could not load.') + '</p>'; return; }
+
     if (r.drivers && !DRIVERS.length) {
-         DRIVERS = r.drivers;
-         var sel = document.getElementById('dfilter');
-         sel.innerHTML = '<option value="">All drivers</option>' +
-           DRIVERS.map(function (d) {
-             return '<option value="' + d.id + '">' + d.name + '</option>';
-           }).join('');
-         if (r.role === 'driver') sel.style.display = 'none';
-       }
-       setCount(r.pending || 0);
-    
+      DRIVERS = r.drivers;
+      var sel = document.getElementById('dfilter');
+      sel.innerHTML = '<option value="">All drivers</option>' +
+        DRIVERS.map(function (d) { return '<option value="' + d.id + '">' + d.name + '</option>'; }).join('');
+      if (r.role === 'driver') sel.style.display = 'none';
+    }
+    setCount(r.pending || 0);
     document.getElementById('label').textContent = r.label || '';
 
     if (!r.jobs.length) {
       box.innerHTML = '<p class="empty">' +
         (VIEW === 'pending' ? 'Nothing waiting for a driver.' : 'No jobs for this day.') + '</p>';
-      if (VIEW === 'pending') setCount(0);
       return;
     }
-    if (VIEW === 'pending') setCount(r.jobs.length);
 
     box.innerHTML = '<div class="grid">' + r.jobs.map(function (j) {
       var acts = '';
-      if (j.status === 'PENDING')      acts = '<button class="go" onclick="showPick(\'' + j.id + '\')">Assign driver</button>';
-      else if (j.status === 'ONGOING') acts = '<button class="fin" onclick="act(\'finish\',\'' + j.id + '\',this)">Finish trip</button>';
-      else                             acts = '<button class="go" onclick="act(\'go\',\'' + j.id + '\',this)">Start trip</button>';
+
+      if (j.status === 'PENDING') {
+        acts = '<button class="go" onclick="showPick(\'' + j.id + '\')">Assign driver</button>';
+      } else if (j.status === 'ONGOING') {
+        acts = '<button class="fin" onclick="act(\'finish\',\'' + j.id + '\',this)">Finish trip</button>' +
+               '<button class="go" onclick="ext(\'' + j.id + '\',\'' + j.end + '\',60,this)">+1 hour</button>';
+      } else {
+        acts = '<button class="go" onclick="act(\'go\',\'' + j.id + '\',this)">Start early</button>';
+      }
       acts += '<button class="cxl" onclick="act(\'cancel\',\'' + j.id + '\',this)">Cancel</button>';
 
       var who2 = j.selfDrive ? 'SELF DRIVE' : (j.driver || 'no driver yet');
@@ -257,7 +270,8 @@ function load() {
         '</div></div></div>';
     }).join('') + '</div>';
   }).catch(function (err) {
-    document.getElementById('body').innerHTML = '<p class="empty">Could not reach the server.<br>' + err.message + '</p>';
+    FIRST = false;
+    box.innerHTML = '<p class="empty">Could not reach the server.<br>' + err.message + '</p>';
   });
 }
 
@@ -283,6 +297,19 @@ function act(what, id, btn) {
   btn.disabled = true;
   api(what, { id: id, reason: 'from dispatch board' }).then(function (res) {
     toast(res && res.message ? res.message : 'Done'); load();
+  }).catch(function (err) { toast('Failed: ' + err.message); btn.disabled = false; });
+}
+
+  function ext(id, end, mins, btn) {
+  var p = end.split(':');
+  var t = (Number(p[0]) * 60 + Number(p[1]) + mins) % 1440;
+  var nt = ('0' + Math.floor(t / 60)).slice(-2) + ':' + ('0' + (t % 60)).slice(-2);
+
+  if (!confirm('Extend ' + id + ' to ' + nt + '?\n\nExtra time is charged.')) return;
+  btn.disabled = true;
+  api('extend', { id: id, end: nt }).then(function (res) {
+    toast(res && res.message ? res.message : 'Done');
+    load();
   }).catch(function (err) { toast('Failed: ' + err.message); btn.disabled = false; });
 }
 
