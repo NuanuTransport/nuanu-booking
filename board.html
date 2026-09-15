@@ -11,20 +11,14 @@
   --blue:#2F4E8F; --amber:#B07D00;
 }
 *{box-sizing:border-box}
-body{
-  margin:0;background:var(--paper);color:var(--ink);
-  font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:16px;
-}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:16px}
 .bar{display:flex;justify-content:space-between;align-items:center;padding:12px 22px;background:var(--ink);color:#fff}
 .bar h1{font-size:18px;margin:0;font-weight:600}
 .bar .sub{font-size:13px;opacity:.7}
 .bar .clock{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums}
 
-nav{display:flex;gap:6px;padding:12px 22px 0;background:var(--ink);align-items:center}
-nav button{
-  padding:9px 18px;font-size:14px;font-weight:600;font-family:inherit;
-  background:rgba(255,255,255,.12);color:#fff;border:0;border-radius:7px 7px 0 0;cursor:pointer;
-}
+nav{display:flex;gap:6px;padding:12px 22px 0;background:var(--ink);align-items:center;flex-wrap:wrap}
+nav button{padding:9px 18px;font-size:14px;font-weight:600;font-family:inherit;background:rgba(255,255,255,.12);color:#fff;border:0;border-radius:7px 7px 0 0;cursor:pointer}
 nav button.on{background:var(--paper);color:var(--ink)}
 nav .count{display:inline-block;margin-left:7px;background:var(--stop);color:#fff;border-radius:20px;padding:1px 7px;font-size:12px}
 nav select{margin-left:auto;padding:8px 10px;border-radius:6px;border:0;font-family:inherit;font-size:14px}
@@ -40,7 +34,7 @@ nav select{margin-left:auto;padding:8px 10px;border-radius:6px;border:0;font-fam
 .job p{margin:5px 0 0;font-size:14.5px;color:var(--muted)}
 .job .live{display:inline-block;margin-top:9px;font-size:12px;font-weight:600;background:#E8EDF6;color:var(--blue);padding:3px 9px;border-radius:20px}
 .acts{display:flex;gap:9px;margin-top:14px;flex-wrap:wrap}
-.acts button{flex:1 1 120px;padding:12px 6px;font-size:15px;font-weight:600;font-family:inherit;border-radius:6px;cursor:pointer;border:0;color:#fff}
+.acts button{flex:1 1 110px;padding:12px 6px;font-size:15px;font-weight:600;font-family:inherit;border-radius:6px;cursor:pointer;border:0;color:#fff}
 .go{background:var(--moss)}
 .fin{background:var(--blue)}
 .cxl{background:var(--card) !important;border:1px solid var(--stop) !important;color:var(--stop) !important}
@@ -51,46 +45,31 @@ nav select{margin-left:auto;padding:8px 10px;border-radius:6px;border:0;font-fam
 .pick .names{display:flex;flex-wrap:wrap;gap:7px}
 .pick .names button{flex:0 0 auto;padding:9px 13px;font-size:14px;font-weight:600;font-family:inherit;background:var(--moss);color:#fff;border:0;border-radius:6px;cursor:pointer}
 
-/* ---------- calendar ---------- */
 .calbar{display:flex;align-items:center;gap:10px;padding:16px 22px 0;flex-wrap:wrap}
 .calbar .seg{display:flex;background:#E4EAE4;border-radius:7px;padding:3px}
 .calbar .seg button{padding:8px 16px;font-size:14px;font-weight:600;font-family:inherit;background:transparent;color:var(--muted);border:0;border-radius:5px;cursor:pointer}
 .calbar .seg button.on{background:var(--card);color:var(--ink)}
-.calbar .nav{display:flex;gap:6px}
-.calbar .nav button{padding:8px 14px;font-size:15px;font-weight:600;font-family:inherit;background:var(--card);border:1px solid var(--line);border-radius:6px;cursor:pointer}
+.calbar .nav2{display:flex;gap:6px}
+.calbar .nav2 button{padding:8px 14px;font-size:15px;font-weight:600;font-family:inherit;background:var(--card);border:1px solid var(--line);border-radius:6px;cursor:pointer}
 .calbar .title{font-size:17px;font-weight:600;margin-left:6px}
 
 .calwrap{padding:16px 22px 40px;overflow-x:auto}
-table.cal{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:8px}
+table.cal{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line)}
 table.cal th,table.cal td{border:1px solid var(--line);padding:0;vertical-align:top}
 table.cal th{background:#E4EAE4;font-size:12px;font-weight:600;padding:7px 5px;text-align:center;white-space:nowrap}
-table.cal th.rowhead,table.cal td.rowhead{
-  text-align:left;padding:10px 12px;width:150px;min-width:150px;
-  font-weight:600;font-size:14px;background:#F6F8F5;
-}
+table.cal th.rowhead,table.cal td.rowhead{text-align:left;padding:10px 12px;width:150px;min-width:150px;font-weight:600;font-size:14px;background:#F6F8F5}
 td.rowhead small{display:block;font-weight:400;color:var(--muted);font-size:12px}
-
-/* day view track */
 .track{position:relative;height:54px}
 .hourline{position:absolute;top:0;bottom:0;width:1px;background:#EDF0EC}
-.bar2{
-  position:absolute;border-radius:5px;padding:3px 7px;overflow:hidden;
-  font-size:11.5px;line-height:1.25;color:#fff;white-space:nowrap;text-overflow:ellipsis;cursor:default;
-}
+.bar2{position:absolute;border-radius:5px;padding:3px 7px;overflow:hidden;font-size:11.5px;line-height:1.25;color:#fff;white-space:nowrap;text-overflow:ellipsis}
 .bar2.APPROVED{background:var(--moss)}
 .bar2.ONGOING{background:var(--blue)}
 .bar2.PENDING{background:var(--amber)}
 .bar2.COMPLETED{background:#8A968E}
-.bar2 b{font-weight:600}
-
-/* week + month cells */
 .cell{padding:7px 6px;min-height:66px}
 .cell .load{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px}
 .cell .load.full{color:var(--stop)}
-.chip{
-  display:block;border-radius:4px;padding:2px 6px;margin-bottom:3px;
-  font-size:11px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
+.chip{display:block;border-radius:4px;padding:2px 6px;margin-bottom:3px;font-size:11px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chip.APPROVED{background:var(--moss)}
 .chip.ONGOING{background:var(--blue)}
 .chip.PENDING{background:var(--amber)}
@@ -107,10 +86,7 @@ td.today{background:#FFFBEF}
 <body>
 
 <div class="bar">
-  <div>
-    <h1>Dispatch Board</h1>
-    <div class="sub" id="label"></div>
-  </div>
+  <div><h1>Dispatch Board</h1><div class="sub" id="label"></div></div>
   <div class="clock" id="clock">--:--</div>
 </div>
 
@@ -128,9 +104,9 @@ td.today{background:#FFFBEF}
     <button id="m-week" onclick="setMode('week')">Week</button>
     <button id="m-month" onclick="setMode('month')">Month</button>
   </div>
-  <div class="nav">
+  <div class="nav2">
     <button onclick="step(-1)">‹</button>
-    <button onclick="today()">Today</button>
+    <button onclick="jumpToday()">Today</button>
     <button onclick="step(1)">›</button>
   </div>
   <div class="title" id="caltitle"></div>
@@ -143,17 +119,17 @@ td.today{background:#FFFBEF}
 /* ==========================================================
    PASTE YOUR APPS SCRIPT /exec URL BETWEEN THE QUOTES BELOW
    ========================================================== */
-var API_URL = 'https://script.google.com/macros/s/AKfycbzgpjJpb96wLeKH0mHQfNJmtgk7nbuj34zpUxATGDRM_ReShbIVz-kegSBIdElie4dt/exec';
+var API_URL = 'PASTE_YOUR_EXEC_URL_HERE';
 /* ========================================================== */
 
 var TOKEN = '';
 try { TOKEN = new URLSearchParams(location.search).get('t') || ''; }
 catch (e) { var m0 = location.search.match(/[?&]t=([^&]+)/); TOKEN = m0 ? m0[1] : ''; }
 
-var DATA = null;
-var LABELS = {}; 
 var VIEW = 'today';
 var DRIVERS = [];
+var DATA = null;
+var LABELS = {};
 var CAL_MODE = 'day';
 var CAL_DATE = isoToday();
 
@@ -164,7 +140,6 @@ function isoToday() {
 
 function api(action, data, tries) {
   tries = tries || 0;
-
   var url = API_URL +
     '?action=' + encodeURIComponent(action) +
     '&t=' + encodeURIComponent(TOKEN) +
@@ -172,30 +147,21 @@ function api(action, data, tries) {
     '&cb=' + Date.now();
 
   return fetch(url).then(function (r) { return r.text(); }).then(function (txt) {
-    try {
-      return JSON.parse(txt);
-    } catch (e) {
-      if (tries < 4) {
-        return new Promise(function (res) {
-          setTimeout(function () { res(api(action, data, tries + 1)); }, 1500 * (tries + 1));
-        });
-      }
-      throw new Error('Server stayed busy. It will try again shortly.');
-    }
-  }).catch(function (err) {
-    if (tries < 4) {
-      return new Promise(function (res) {
-        setTimeout(function () { res(api(action, data, tries + 1)); }, 1500 * (tries + 1));
-      });
-    }
-    throw err;
+    try { return JSON.parse(txt); }
+    catch (e) { return again(action, data, tries); }
+  }).catch(function () { return again(action, data, tries); });
+}
+
+function again(action, data, tries) {
+  if (tries >= 4) throw new Error('Server stayed busy.');
+  return new Promise(function (res) {
+    setTimeout(function () { res(api(action, data, tries + 1)); }, 1500 * (tries + 1));
   });
 }
-  
+
 function toast(text) {
   var t = document.getElementById('toast');
-  t.textContent = text;
-  t.style.display = 'block';
+  t.textContent = text; t.style.display = 'block';
   setTimeout(function () { t.style.display = 'none'; }, 4500);
 }
 
@@ -208,17 +174,21 @@ tick(); setInterval(tick, 20000);
 
 function go(which) {
   VIEW = which;
-  ['today', 'tomorrow', 'pending', 'calendar'].forEach(function (n) {
+  ['today','tomorrow','pending','calendar'].forEach(function (n) {
     document.getElementById('tab-' + n).className = (n === which ? 'on' : '');
   });
   document.getElementById('calbar').style.display = (which === 'calendar') ? 'flex' : 'none';
   document.getElementById('dfilter').style.display = (which === 'calendar') ? 'none' : '';
 
   if (which === 'calendar') { loadCal(); return; }
-  if (DATA) render();                 // instant, no server call
-  else load();
+  if (DATA) render(); else load();
 }
-var FIRST = true;
+
+function setCount(n) {
+  var el = document.getElementById('pcount');
+  el.textContent = n;
+  el.style.display = n ? 'inline-block' : 'none';
+}
 
 function load() {
   if (VIEW === 'calendar') return loadCal();
@@ -247,20 +217,18 @@ function load() {
 
     setCount(r.pending || 0);
     render();
-  }).catch(function (err) {
+  }).catch(function () {
     if (!DATA) {
       box.innerHTML = '<p class="empty">Waiting for the server…<br>' +
-        '<span style="font-size:14px">Trying again in a moment.</span></p>';
-      setTimeout(load, 5000);
+        '<span style="font-size:14px">Trying again shortly.</span></p>';
+      setTimeout(load, 6000);
     }
-    // if we already have data on screen, leave it and wait for the next refresh
   });
 }
 
 function render() {
   var box = document.getElementById('body');
-  var jobs = DATA[VIEW] || [];
-
+  var jobs = (DATA && DATA[VIEW]) || [];
   document.getElementById('label').textContent = LABELS[VIEW] || '';
 
   if (!jobs.length) {
@@ -299,12 +267,6 @@ function render() {
       '</div></div></div>';
   }).join('') + '</div>';
 }
-  
-function setCount(n) {
-  var el = document.getElementById('pcount');
-  el.textContent = n;
-  el.style.display = n ? 'inline-block' : 'none';
-}
 
 function showPick(id) {
   var el = document.getElementById('pick-' + id);
@@ -313,7 +275,8 @@ function showPick(id) {
 
 function assign(id, driverId) {
   api('assign', { id: id, driverId: driverId }).then(function (res) {
-    toast(res && res.message ? res.message : 'Done'); load();
+    toast(res && res.message ? res.message : 'Done');
+    DATA = null; load();
   }).catch(function (err) { toast('Failed: ' + err.message); });
 }
 
@@ -321,20 +284,20 @@ function act(what, id, btn) {
   if (what === 'cancel' && !confirm('Cancel ' + id + '?')) return;
   btn.disabled = true;
   api(what, { id: id, reason: 'from dispatch board' }).then(function (res) {
-    toast(res && res.message ? res.message : 'Done'); load();
+    toast(res && res.message ? res.message : 'Done');
+    DATA = null; load();
   }).catch(function (err) { toast('Failed: ' + err.message); btn.disabled = false; });
 }
 
-  function ext(id, end, mins, btn) {
+function ext(id, end, mins, btn) {
   var p = end.split(':');
   var t = (Number(p[0]) * 60 + Number(p[1]) + mins) % 1440;
   var nt = ('0' + Math.floor(t / 60)).slice(-2) + ':' + ('0' + (t % 60)).slice(-2);
-
   if (!confirm('Extend ' + id + ' to ' + nt + '?\n\nExtra time is charged.')) return;
   btn.disabled = true;
   api('extend', { id: id, end: nt }).then(function (res) {
     toast(res && res.message ? res.message : 'Done');
-    load();
+    DATA = null; load();
   }).catch(function (err) { toast('Failed: ' + err.message); btn.disabled = false; });
 }
 
@@ -342,13 +305,13 @@ function act(what, id, btn) {
 
 function setMode(m) {
   CAL_MODE = m;
-  ['day', 'week', 'month'].forEach(function (n) {
+  ['day','week','month'].forEach(function (n) {
     document.getElementById('m-' + n).className = (n === m ? 'on' : '');
   });
   loadCal();
 }
 
-function today() { CAL_DATE = isoToday(); loadCal(); }
+function jumpToday() { CAL_DATE = isoToday(); loadCal(); }
 
 function step(n) {
   var p = CAL_DATE.split('-');
@@ -378,9 +341,9 @@ function loadCal() {
     var types = Object.keys(r.fleet);
     if (!types.length) { box.innerHTML = '<p class="empty">No vehicles in the Fleet tab.</p>'; return; }
 
-    var html = (r.mode === 'day')   ? dayView(r, types)
-             : (r.mode === 'week')  ? weekView(r, types)
-                                    : monthView(r);
+    var html = (r.mode === 'day') ? dayView(r, types)
+             : (r.mode === 'week') ? weekView(r, types)
+             : monthView(r);
 
     box.innerHTML = '<div class="calwrap">' + html + '</div>' +
       '<div class="legend">' +
@@ -389,13 +352,14 @@ function loadCal() {
         '<span><i style="background:#2F4E8F"></i> Running</span>' +
         '<span><i style="background:#8A968E"></i> Finished</span>' +
       '</div>';
-  }).catch(function (err) {
-    box.innerHTML = '<p class="empty">Could not reach the server.<br>' + err.message + '</p>';
+  }).catch(function () {
+    box.innerHTML = '<p class="empty">Waiting for the server…</p>';
+    setTimeout(loadCal, 6000);
   });
 }
 
 function dayView(r, types) {
-  var OPEN = 6 * 60, CLOSE = 30 * 60, span = CLOSE - OPEN;   // 06:00 to 06:00
+  var OPEN = 6 * 60, CLOSE = 30 * 60, span = CLOSE - OPEN;
   var anchor = r.from;
 
   var hours = [];
@@ -408,16 +372,14 @@ function dayView(r, types) {
 
   var rows = types.map(function (t) {
     var mine = [];
-
     r.bookings.forEach(function (b) {
       if (b.type !== t) return;
       var s = toMin(b.start), e = toMin(b.end);
-
       if (b.date === anchor) {
-        if (e <= s) e += 1440;               // runs past midnight
-        if (e <= OPEN) return;               // finished before the window opens
+        if (e <= s) e += 1440;
+        if (e <= OPEN) return;
       } else {
-        s += 1440; e += 1440;                // next day, early hours
+        s += 1440; e += 1440;
         if (s >= CLOSE) return;
       }
       mine.push({ b: b, s: Math.max(OPEN, s), e: Math.min(CLOSE, e) });
@@ -529,7 +491,6 @@ function monthView(r) {
   return '<table class="cal">' + head + body + '</table>';
 }
 
-/** Highest number of units in use at any one moment. */
 function peakUnits(list) {
   var points = [];
   list.forEach(function (b) {
@@ -537,16 +498,9 @@ function peakUnits(list) {
     points.push({ t: toMin(b.end), n: -b.units });
   });
   points.sort(function (a, b) { return a.t - b.t || a.n - b.n; });
-
   var cur = 0, max = 0;
   points.forEach(function (p) { cur += p.n; if (cur > max) max = cur; });
   return max;
-}
-
-function refreshCount() {
-  api('board', { when: 'pending', driverId: '' }).then(function (r) {
-    if (r && r.ok) setCount(r.jobs.length);
-  });
 }
 
 load();
