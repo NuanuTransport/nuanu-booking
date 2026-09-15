@@ -162,7 +162,9 @@ function isoToday() {
   return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
 }
 
-function api(action, data, retry) {
+function api(action, data, tries) {
+  tries = tries || 0;
+
   var url = API_URL +
     '?action=' + encodeURIComponent(action) +
     '&t=' + encodeURIComponent(TOKEN) +
@@ -173,15 +175,23 @@ function api(action, data, retry) {
     try {
       return JSON.parse(txt);
     } catch (e) {
-      if (!retry) {
+      if (tries < 4) {
         return new Promise(function (res) {
-          setTimeout(function () { res(api(action, data, true)); }, 1200);
+          setTimeout(function () { res(api(action, data, tries + 1)); }, 1500 * (tries + 1));
         });
       }
-      throw new Error('Server was busy. Try again in a moment.');
+      throw new Error('Server stayed busy. It will try again shortly.');
     }
+  }).catch(function (err) {
+    if (tries < 4) {
+      return new Promise(function (res) {
+        setTimeout(function () { res(api(action, data, tries + 1)); }, 1500 * (tries + 1));
+      });
+    }
+    throw err;
   });
 }
+  
 function toast(text) {
   var t = document.getElementById('toast');
   t.textContent = text;
@@ -238,10 +248,14 @@ function load() {
     setCount(r.pending || 0);
     render();
   }).catch(function (err) {
-    box.innerHTML = '<p class="empty">Could not reach the server.<br>' + err.message + '</p>';
+    if (!DATA) {
+      box.innerHTML = '<p class="empty">Waiting for the server…<br>' +
+        '<span style="font-size:14px">Trying again in a moment.</span></p>';
+      setTimeout(load, 5000);
+    }
+    // if we already have data on screen, leave it and wait for the next refresh
   });
 }
-
 
 function render() {
   var box = document.getElementById('body');
