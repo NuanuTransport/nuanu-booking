@@ -119,7 +119,7 @@ td.today{background:#FFFBEF}
   <button id="tab-tomorrow" onclick="go('tomorrow')">Tomorrow</button>
   <button id="tab-pending" onclick="go('pending')">Waiting<span class="count" id="pcount" style="display:none">0</span></button>
   <button id="tab-calendar" onclick="go('calendar')">Calendar</button>
-  <select id="dfilter" onchange="load()"><option value="">All drivers</option></select>
+  <select id="dfilter" onchange="DATA=null;load()"><option value="">All drivers</option></select>
 </nav>
 
 <div id="calbar" class="calbar" style="display:none">
@@ -150,6 +150,8 @@ var TOKEN = '';
 try { TOKEN = new URLSearchParams(location.search).get('t') || ''; }
 catch (e) { var m0 = location.search.match(/[?&]t=([^&]+)/); TOKEN = m0 ? m0[1] : ''; }
 
+var DATA = null;
+var LABELS = {}; 
 var VIEW = 'today';
 var DRIVERS = [];
 var CAL_MODE = 'day';
@@ -201,27 +203,29 @@ function go(which) {
   });
   document.getElementById('calbar').style.display = (which === 'calendar') ? 'flex' : 'none';
   document.getElementById('dfilter').style.display = (which === 'calendar') ? 'none' : '';
-  load();
-}
 
+  if (which === 'calendar') { loadCal(); return; }
+  if (DATA) render();                 // instant, no server call
+  else load();
+}
 var FIRST = true;
 
 function load() {
   if (VIEW === 'calendar') return loadCal();
 
   var box = document.getElementById('body');
-  if (FIRST) box.innerHTML = '<div class="grid">' +
-    '<div class="job" style="opacity:.35"><div class="time">--:-- – --:--</div>' +
-    '<div class="id">loading</div><div class="driver">&nbsp;</div><p>&nbsp;</p><p>&nbsp;</p></div>' +
-    '<div class="job" style="opacity:.2"><div class="time">--:-- – --:--</div>' +
-    '<div class="id">loading</div><div class="driver">&nbsp;</div><p>&nbsp;</p><p>&nbsp;</p></div>' +
-    '</div>';
+  if (!DATA) box.innerHTML = '<p class="empty">Loading…</p>';
 
   var who = document.getElementById('dfilter').value;
 
-  api('boardinit', { when: VIEW, driverId: who }).then(function (r) {
-    FIRST = false;
-    if (!r || !r.ok) { box.innerHTML = '<p class="empty">' + ((r && r.message) || 'Could not load.') + '</p>'; return; }
+  api('boardall', { driverId: who }).then(function (r) {
+    if (!r || !r.ok) {
+      box.innerHTML = '<p class="empty">' + ((r && r.message) || 'Could not load.') + '</p>';
+      return;
+    }
+
+    DATA = r.jobs;
+    LABELS = r.labels;
 
     if (r.drivers && !DRIVERS.length) {
       DRIVERS = r.drivers;
@@ -230,51 +234,58 @@ function load() {
         DRIVERS.map(function (d) { return '<option value="' + d.id + '">' + d.name + '</option>'; }).join('');
       if (r.role === 'driver') sel.style.display = 'none';
     }
+
     setCount(r.pending || 0);
-    document.getElementById('label').textContent = r.label || '';
-
-    if (!r.jobs.length) {
-      box.innerHTML = '<p class="empty">' +
-        (VIEW === 'pending' ? 'Nothing waiting for a driver.' : 'No jobs for this day.') + '</p>';
-      return;
-    }
-
-    box.innerHTML = '<div class="grid">' + r.jobs.map(function (j) {
-      var acts = '';
-
-      if (j.status === 'PENDING') {
-        acts = '<button class="go" onclick="showPick(\'' + j.id + '\')">Assign driver</button>';
-      } else if (j.status === 'ONGOING') {
-        acts = '<button class="fin" onclick="act(\'finish\',\'' + j.id + '\',this)">Finish trip</button>' +
-               '<button class="go" onclick="ext(\'' + j.id + '\',\'' + j.end + '\',60,this)">+1 hour</button>';
-      } else {
-        acts = '<button class="go" onclick="act(\'go\',\'' + j.id + '\',this)">Start early</button>';
-      }
-      acts += '<button class="cxl" onclick="act(\'cancel\',\'' + j.id + '\',this)">Cancel</button>';
-
-      var who2 = j.selfDrive ? 'SELF DRIVE' : (j.driver || 'no driver yet');
-
-      return '<div class="job ' + j.status + '">' +
-        '<div class="time">' + j.start + ' \u2013 ' + j.end + '</div>' +
-        '<div class="id">' + j.id + ' \u00b7 ' + j.date + ' \u00b7 ' + j.status + '</div>' +
-        '<div class="driver' + (j.driver || j.selfDrive ? '' : ' none') + '">' + who2 + '</div>' +
-        '<p>' + j.vehicle + '</p><p>' + j.pickup + ' \u2192 ' + j.dropoff + '</p><p>' + j.req + '</p>' +
-        (j.purpose ? '<p>' + j.purpose + '</p>' : '') +
-        (j.astart ? '<span class="live">Running since ' + j.astart + '</span>' : '') +
-        '<div class="acts">' + acts + '</div>' +
-        '<div class="pick" id="pick-' + j.id + '"><p>Which driver?</p><div class="names">' +
-          DRIVERS.map(function (d) {
-            return '<button onclick="assign(\'' + j.id + '\',\'' + d.id + '\')">' + d.name + '</button>';
-          }).join('') +
-          (DRIVERS.length ? '' : '<span style="color:#5C6B62;font-size:14px">No active drivers in People.</span>') +
-        '</div></div></div>';
-    }).join('') + '</div>';
+    render();
   }).catch(function (err) {
-    FIRST = false;
     box.innerHTML = '<p class="empty">Could not reach the server.<br>' + err.message + '</p>';
   });
 }
 
+
+function render() {
+  var box = document.getElementById('body');
+  var jobs = DATA[VIEW] || [];
+
+  document.getElementById('label').textContent = LABELS[VIEW] || '';
+
+  if (!jobs.length) {
+    box.innerHTML = '<p class="empty">' +
+      (VIEW === 'pending' ? 'Nothing waiting for a driver.' : 'No jobs for this day.') + '</p>';
+    return;
+  }
+
+  box.innerHTML = '<div class="grid">' + jobs.map(function (j) {
+    var acts = '';
+    if (j.status === 'PENDING') {
+      acts = '<button class="go" onclick="showPick(\'' + j.id + '\')">Assign driver</button>';
+    } else if (j.status === 'ONGOING') {
+      acts = '<button class="fin" onclick="act(\'finish\',\'' + j.id + '\',this)">Finish trip</button>' +
+             '<button class="go" onclick="ext(\'' + j.id + '\',\'' + j.end + '\',60,this)">+1 hour</button>';
+    } else {
+      acts = '<button class="go" onclick="act(\'go\',\'' + j.id + '\',this)">Start early</button>';
+    }
+    acts += '<button class="cxl" onclick="act(\'cancel\',\'' + j.id + '\',this)">Cancel</button>';
+
+    var who2 = j.selfDrive ? 'SELF DRIVE' : (j.driver || 'no driver yet');
+
+    return '<div class="job ' + j.status + '">' +
+      '<div class="time">' + j.start + ' \u2013 ' + j.end + '</div>' +
+      '<div class="id">' + j.id + ' \u00b7 ' + j.date + ' \u00b7 ' + j.status + '</div>' +
+      '<div class="driver' + (j.driver || j.selfDrive ? '' : ' none') + '">' + who2 + '</div>' +
+      '<p>' + j.vehicle + '</p><p>' + j.pickup + ' \u2192 ' + j.dropoff + '</p><p>' + j.req + '</p>' +
+      (j.purpose ? '<p>' + j.purpose + '</p>' : '') +
+      (j.astart ? '<span class="live">Running since ' + j.astart + '</span>' : '') +
+      '<div class="acts">' + acts + '</div>' +
+      '<div class="pick" id="pick-' + j.id + '"><p>Which driver?</p><div class="names">' +
+        DRIVERS.map(function (d) {
+          return '<button onclick="assign(\'' + j.id + '\',\'' + d.id + '\')">' + d.name + '</button>';
+        }).join('') +
+        (DRIVERS.length ? '' : '<span style="color:#5C6B62;font-size:14px">No active drivers in People.</span>') +
+      '</div></div></div>';
+  }).join('') + '</div>';
+}
+  
 function setCount(n) {
   var el = document.getElementById('pcount');
   el.textContent = n;
