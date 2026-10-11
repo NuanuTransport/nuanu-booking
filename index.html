@@ -58,15 +58,23 @@ textarea{resize:vertical;min-height:54px}
 .row .field{width:100%}
 
 .choices{display:flex;flex-wrap:wrap;gap:6px}
-.choice{flex:1 1 90px;min-width:0}
-.choice input{position:absolute;opacity:0;pointer-events:none}
+.choice{flex:1 1 90px;min-width:0;margin:0}
+.choice input{position:absolute;opacity:0;pointer-events:none;width:auto}
 .choice span{
   display:block;text-align:center;padding:11px 4px;background:var(--card);
-  border:1px solid var(--line);border-radius:6px;cursor:pointer;font-size:14px;
+  border:1px solid var(--line);border-radius:6px;cursor:pointer;font-size:14px;font-weight:500;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .choice input:checked + span{background:var(--moss);border-color:var(--moss);color:#fff;font-weight:600}
 .choice input:disabled + span{opacity:.4}
+.days .choice{flex:1 1 38px}
+.days .choice span{padding:10px 0;font-size:13px}
+
+.tick{display:flex;align-items:center;gap:10px;font-weight:600;font-size:14px;margin:0;cursor:pointer}
+.tick input{width:20px !important;height:20px;margin:0;padding:0;flex:0 0 auto}
+.repeat{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 14px 2px;margin-bottom:16px}
+.count{margin:-4px 0 14px;font-size:13.5px;color:var(--muted)}
+.count.bad{color:var(--stop)}
 
 button.go{
   display:block;width:100%;padding:14px;font-size:16px;font-weight:600;font-family:inherit;
@@ -88,7 +96,7 @@ button.go:disabled{opacity:.55}
 .tag.APPROVED{background:#E4EFE7;color:var(--moss)}
 .tag.ONGOING{background:#E8EDF6;color:var(--blue)}
 .tag.COMPLETED{background:#E4EAE4;color:var(--muted)}
-.tag.CANCELLED,.tag.REJECTED{background:#F6E3E0;color:var(--stop)}
+.tag.CANCELLED,.tag.REJECTED,.tag.NOSHOW{background:#F6E3E0;color:var(--stop)}
 .bk p{margin:5px 0 0;color:var(--muted);font-size:13.5px}
 .bk .cost{margin-top:7px;font-size:13.5px;color:var(--ink);font-weight:600}
 
@@ -117,16 +125,16 @@ dl.me dd{margin:2px 0 0;color:var(--muted);word-break:break-word}
 
 #boot{padding:50px 18px;text-align:center;color:var(--muted);font-size:14px}
 #boot .diag{font-size:11.5px;word-break:break-all;margin-top:14px;color:#9AA69E;text-align:left}
-#app{display:none}
 </style>
 </head>
 <body>
 
 <div id="boot" style="display:none"></div>
+
 <div id="app" class="wrap" style="display:block">
   <header>
     <h1>Vehicle Work Order Transport</h1>
-    <p id="wholine"></p>
+    <p id="wholine">&nbsp;</p>
   </header>
 
   <nav>
@@ -145,7 +153,39 @@ dl.me dd{margin:2px 0 0;color:var(--muted);word-break:break-word}
         <div class="field"><label>Their department</label><input type="text" id="guestDept"></div>
       </div>
 
-      <div class="field"><label>Date</label><input type="date" id="date"></div>
+      <div class="field"><label id="dateLabel">Date</label><input type="date" id="date" onchange="countRepeat()"></div>
+
+      <!-- repeat: only shown for Book for someone else -->
+      <div id="repeatBox" style="display:none">
+        <div class="repeat">
+          <div class="field">
+            <label class="tick"><input type="checkbox" id="repeatOn" onchange="toggleRepeat()"> Repeat on more days</label>
+          </div>
+          <div id="repeatOpts" style="display:none">
+            <div class="field"><label>Last date</label><input type="date" id="until" onchange="countRepeat()"></div>
+            <div class="field">
+              <label>On these days</label>
+              <div class="choices days">
+                <label class="choice"><input type="checkbox" name="rday" value="1" checked onchange="countRepeat()"><span>Mon</span></label>
+                <label class="choice"><input type="checkbox" name="rday" value="2" checked onchange="countRepeat()"><span>Tue</span></label>
+                <label class="choice"><input type="checkbox" name="rday" value="3" checked onchange="countRepeat()"><span>Wed</span></label>
+                <label class="choice"><input type="checkbox" name="rday" value="4" checked onchange="countRepeat()"><span>Thu</span></label>
+                <label class="choice"><input type="checkbox" name="rday" value="5" checked onchange="countRepeat()"><span>Fri</span></label>
+                <label class="choice"><input type="checkbox" name="rday" value="6" checked onchange="countRepeat()"><span>Sat</span></label>
+                <label class="choice"><input type="checkbox" name="rday" value="0" checked onchange="countRepeat()"><span>Sun</span></label>
+              </div>
+            </div>
+            <div class="field">
+              <label>If a date is already full</label>
+              <div class="choices">
+                <label class="choice"><input type="radio" name="full" value="stop" checked><span>Stop and tell me</span></label>
+                <label class="choice"><input type="radio" name="full" value="skip"><span>Skip full dates</span></label>
+              </div>
+            </div>
+            <p class="count" id="repeatCount"></p>
+          </div>
+        </div>
+      </div>
 
       <div class="field">
         <label>Vehicle</label>
@@ -157,9 +197,9 @@ dl.me dd{margin:2px 0 0;color:var(--muted);word-break:break-word}
           <label class="choice"><input type="radio" name="type" value="motorcycle"><span>Motorcycle</span></label>
         </div>
       </div>
-      
+
       <div class="field">
-        <label>Driver <span class="hint">— self drive is 6-seater only</span></label>
+        <label>Driver <span class="hint">— self drive for 6-seater, cargo and motorcycle</span></label>
         <div class="choices">
           <label class="choice"><input type="radio" name="driver" value="with" checked><span>With driver</span></label>
           <label class="choice"><input type="radio" name="driver" value="self" id="selfOpt"><span>Self drive</span></label>
@@ -178,13 +218,13 @@ dl.me dd{margin:2px 0 0;color:var(--muted);word-break:break-word}
 
       <div class="field">
         <label>Pickup</label>
-        <select id="pickup" onchange="other('pickup')"></select>
+        <select id="pickup" onchange="other('pickup')"><option value="">Loading…</option></select>
         <input type="text" id="pickupOther" placeholder="Type the location" style="display:none;margin-top:8px">
       </div>
 
       <div class="field">
         <label>Drop-off</label>
-        <select id="dropoff" onchange="other('dropoff')"></select>
+        <select id="dropoff" onchange="other('dropoff')"><option value="">Loading…</option></select>
         <input type="text" id="dropoffOther" placeholder="Type the location" style="display:none;margin-top:8px">
       </div>
 
@@ -193,7 +233,7 @@ dl.me dd{margin:2px 0 0;color:var(--muted);word-break:break-word}
         <textarea id="purpose"></textarea>
       </div>
 
-      <button class="go" id="btn" onclick="submitIt()">Submit booking</button>
+      <button class="go" id="btn" onclick="submitIt()">Loading…</button>
 
       <p class="small">
         Operating hours 08:00–22:00. Booking within 3 hours of the start time adds a
@@ -203,7 +243,7 @@ dl.me dd{margin:2px 0 0;color:var(--muted);word-break:break-word}
 
     <div id="done">
       <div class="card">
-        <h2>Booking submitted</h2>
+        <h2 id="doneTitle">Booking submitted</h2>
         <p id="doneId" class="hint"></p>
         <pre id="doneBody"></pre>
       </div>
@@ -218,17 +258,22 @@ dl.me dd{margin:2px 0 0;color:var(--muted);word-break:break-word}
 
 <script>
 /* ==========================================================
-   PASTE YOUR APPS SCRIPT /exec URL BETWEEN THE QUOTES BELOW
+   Your Apps Script /exec URL. If you ever make a NEW deployment,
+   paste its URL here (and in board.html and boq.html).
    ========================================================== */
 var API_URL = 'https://script.google.com/macros/s/AKfycbzgpjJpb96wLeKH0mHQfNJmtgk7nbuj34zpUxATGDRM_ReShbIVz-kegSBIdElie4dt/exec';
 /* ========================================================== */
 
 var TOKEN = '';
 var ON_BEHALF = false;
+var READY = false;
+var REPEAT_MAX = 62;
 
 function boot(msg, diag) {
-  document.getElementById('boot').innerHTML =
-    '<p>' + msg + '</p>' + (diag ? '<div class="diag">' + diag + '</div>' : '');
+  document.getElementById('app').style.display = 'none';
+  var b = document.getElementById('boot');
+  b.style.display = 'block';
+  b.innerHTML = '<p>' + msg + '</p>' + (diag ? '<div class="diag">' + diag + '</div>' : '');
 }
 
 try { TOKEN = new URLSearchParams(window.location.search).get('t') || ''; }
@@ -242,14 +287,49 @@ try {
   }
 } catch (e) {}
 
-function api(action, data) {
+
+/* ---------------- helpers ---------------- */
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+function js(s) { return String(s == null ? '' : s).replace(/[^A-Za-z0-9_\-.:]/g, ''); }
+function val(id) { var el = document.getElementById(id); return el ? String(el.value || '').trim() : ''; }
+function money(n) { return Number(n || 0).toLocaleString('id-ID'); }
+
+function isoOf(d) {
+  return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+}
+function parseIso(s) { var p = String(s).split('-'); return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]), 12); }
+function shortDay(iso) {
+  var d = parseIso(iso);
+  return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()] + ' ' + d.getDate() + '/' + (d.getMonth() + 1);
+}
+
+function api(action, data, tries) {
+  tries = tries || 0;
   var url = API_URL +
     '?action=' + encodeURIComponent(action) +
     '&t=' + encodeURIComponent(TOKEN) +
     '&data=' + encodeURIComponent(JSON.stringify(data || {})) +
     '&cb=' + Date.now();
-  return fetch(url).then(function (r) { return r.json(); });
+  return fetch(url).then(function (r) { return r.text(); }).then(function (txt) {
+    try { return JSON.parse(txt); }
+    catch (e) { return again(action, data, tries); }
+  }, function () { return again(action, data, tries); });
 }
+
+function again(action, data, tries) {
+  if (tries >= 4) throw new Error('The server stayed busy.');
+  return new Promise(function (res) {
+    setTimeout(function () { res(api(action, data, tries + 1)); }, 1500 * (tries + 1));
+  });
+}
+
+
+/* ---------------- start ---------------- */
 
 function start() {
   if (API_URL.indexOf('PASTE_') === 0) { boot('This page is not finished.', 'API_URL was never filled in.'); return; }
@@ -260,36 +340,36 @@ function start() {
   btn.textContent = 'Loading…';
 
   api('init').then(function (r) {
-    if (!r || !r.ok) {
-      document.getElementById('app').style.display = 'none';
-      document.getElementById('boot').style.display = 'block';
-      boot((r && r.message) || 'Could not load.');
-      return;
-    }
+    if (!r || !r.ok) { boot((r && r.message) || 'Could not load.'); return; }
 
     ON_BEHALF = r.onBehalf === true;
     document.getElementById('wholine').textContent =
-      ON_BEHALF ? 'Booking for someone else' : r.who + (r.dept ? ' \u00b7 ' + r.dept : '');
-    if (ON_BEHALF) document.getElementById('behalf').style.display = 'block';
+      ON_BEHALF ? 'Booking for someone else' : r.who + (r.dept ? ' · ' + r.dept : '');
+    if (ON_BEHALF) {
+      document.getElementById('behalf').style.display = 'block';
+      document.getElementById('repeatBox').style.display = 'block';
+    }
 
     document.getElementById('date').min = r.today;
+    document.getElementById('until').min = r.today;
 
     ['pickup', 'dropoff'].forEach(function (id) {
       document.getElementById(id).innerHTML =
-        r.locations.map(function (L) { return '<option value="' + L + '">' + L + '</option>'; }).join('') +
+        (r.locations || []).map(function (L) { return '<option value="' + esc(L) + '">' + esc(L) + '</option>'; }).join('') +
         '<option value="__other">Other — type it</option>';
     });
 
+    READY = true;
     btn.disabled = false;
-    btn.textContent = 'Submit booking';
-
+    countRepeat();
   }).catch(function (err) {
-    document.getElementById('app').style.display = 'none';
-    document.getElementById('boot').style.display = 'block';
-    boot('Could not reach the server.', 'Error: ' + err.message + '<br><br>API_URL: ' + API_URL);
+    boot('Could not reach the server.', 'Error: ' + esc(err.message) + '<br><br>API_URL: ' + esc(API_URL));
   });
 }
 start();
+
+
+/* ---------------- tabs ---------------- */
 
 function tab(which) {
   ['book', 'list', 'hist', 'me'].forEach(function (n, i) {
@@ -307,9 +387,13 @@ function showMsg(text, good) {
   m.textContent = text;
   m.className = good ? 'good' : '';
   m.style.display = 'block';
+  document.body.scrollTop = 0;
   window.scrollTo(0, 0);
 }
 function hideMsg() { document.getElementById('msg').style.display = 'none'; }
+
+
+/* ---------------- book ---------------- */
 
 var typeRadios = document.getElementsByName('type');
 for (var i = 0; i < typeRadios.length; i++) {
@@ -319,14 +403,13 @@ for (var i = 0; i < typeRadios.length; i++) {
     var mustSelf = (v === 'motorcycle');
     var self = document.getElementById('selfOpt');
     var withD = document.querySelector('input[name=driver][value=with]');
-
     self.disabled = !canSelf;
     withD.disabled = mustSelf;
     if (mustSelf) self.checked = true;
     else if (!canSelf && self.checked) withD.checked = true;
   });
 }
-  
+
 function other(which) {
   var sel = document.getElementById(which);
   var box = document.getElementById(which + 'Other');
@@ -335,7 +418,7 @@ function other(which) {
 }
 function pick(which) {
   var sel = document.getElementById(which);
-  return (sel.value === '__other') ? document.getElementById(which + 'Other').value.trim() : sel.value;
+  return (sel.value === '__other') ? val(which + 'Other') : sel.value;
 }
 function radio(name) {
   var els = document.getElementsByName(name);
@@ -343,104 +426,154 @@ function radio(name) {
   return '';
 }
 
+
+/* ---- repeat ---- */
+
+function repeatIsOn() {
+  return ON_BEHALF && document.getElementById('repeatOn').checked;
+}
+
+function toggleRepeat() {
+  var on = repeatIsOn();
+  document.getElementById('repeatOpts').style.display = on ? 'block' : 'none';
+  document.getElementById('dateLabel').textContent = on ? 'First date' : 'Date';
+  if (on && !val('until') && val('date')) {
+    var d = parseIso(val('date')); d.setDate(d.getDate() + 6);
+    document.getElementById('until').value = isoOf(d);
+  }
+  countRepeat();
+}
+
+function pickedDays() {
+  var out = [], els = document.getElementsByName('rday');
+  for (var i = 0; i < els.length; i++) if (els[i].checked) out.push(Number(els[i].value));
+  return out;
+}
+
+function repeatDates() {
+  var a = val('date'), b = val('until');
+  if (!a || !b || b < a) return [];
+  var days = pickedDays(), out = [], d = parseIso(a), end = parseIso(b), guard = 0;
+  while (d <= end && guard++ < 400) {
+    if (days.indexOf(d.getDay()) > -1) out.push(isoOf(d));
+    d.setDate(d.getDate() + 1);
+  }
+  return out;
+}
+
+function countRepeat() {
+  var btn = document.getElementById('btn');
+  var hint = document.getElementById('repeatCount');
+  if (!repeatIsOn()) {
+    if (READY && !btn.disabled) btn.textContent = 'Submit booking';
+    return;
+  }
+
+  var list = repeatDates();
+  hint.className = 'count';
+  if (!val('date') || !val('until')) hint.textContent = 'Choose the first and the last date.';
+  else if (val('until') < val('date')) { hint.textContent = 'The last date is before the first date.'; hint.className = 'count bad'; }
+  else if (!list.length) { hint.textContent = 'None of the ticked days fall between those dates.'; hint.className = 'count bad'; }
+  else if (list.length > REPEAT_MAX) { hint.textContent = list.length + ' bookings — too many. Keep it to ' + REPEAT_MAX + '.'; hint.className = 'count bad'; }
+  else hint.textContent = list.length + ' bookings: ' + shortDay(list[0]) + ' to ' + shortDay(list[list.length - 1]) + '.';
+
+  if (READY && !btn.disabled) btn.textContent = list.length ? 'Submit ' + list.length + ' bookings' : 'Submit bookings';
+}
+
+
 function submitIt() {
   var btn = document.getElementById('btn');
   hideMsg();
 
   var payload = {
-    date: document.getElementById('date').value,
+    date: val('date'),
     type: radio('type'), driver: radio('driver'),
-    units: document.getElementById('units').value,
-    start: document.getElementById('start').value,
-    end: document.getElementById('end').value,
+    units: val('units'),
+    start: val('start'),
+    end: val('end'),
     pickup: pick('pickup'), dropoff: pick('dropoff'),
-    purpose: document.getElementById('purpose').value
+    purpose: val('purpose')
   };
   if (ON_BEHALF) {
-    payload.guestName = document.getElementById('guestName').value;
-    payload.guestDept = document.getElementById('guestDept').value;
+    payload.guestName = val('guestName');
+    payload.guestDept = val('guestDept');
   }
 
+  var action = 'submit', repeat = repeatIsOn();
+  if (repeat) {
+    var list = repeatDates();
+    if (!list.length) { showMsg('Choose the last date and tick at least one day.'); return; }
+    if (list.length > REPEAT_MAX) { showMsg('That is ' + list.length + ' bookings. Keep a repeat to ' + REPEAT_MAX + ' or fewer.'); return; }
+    payload.repeat = { until: val('until'), days: pickedDays(), skipFull: radio('full') === 'skip' };
+    payload.rk = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);   // stops a double submit
+    action = 'batch';
+  }
+
+  var label = btn.textContent;
   btn.disabled = true; btn.textContent = 'Sending…';
-  api('submit', payload).then(function (res) {
+
+  api(action, payload).then(function (res) {
+    btn.disabled = false; btn.textContent = label;
     if (res && res.ok) {
       document.getElementById('form-view').style.display = 'none';
-      document.getElementById('doneId').textContent = res.message;
+      document.getElementById('doneTitle').textContent = repeat ? (res.count + ' bookings submitted') : 'Booking submitted';
+      document.getElementById('doneId').textContent = repeat ? ('Repeat ' + res.batch) : res.message;
       document.getElementById('doneBody').textContent = res.summary || '';
       document.getElementById('done').style.display = 'block';
+      document.body.scrollTop = 0;
       window.scrollTo(0, 0);
     } else {
       showMsg(res ? res.message : 'Something went wrong.');
     }
-    btn.disabled = false; btn.textContent = 'Submit booking';
   }).catch(function (err) {
+    btn.disabled = false; btn.textContent = label;
     showMsg('Could not submit: ' + err.message);
-    btn.disabled = false; btn.textContent = 'Submit booking';
   });
 }
 
 function resetForm() {
   document.getElementById('done').style.display = 'none';
   document.getElementById('form-view').style.display = 'block';
-  ['date', 'start', 'end', 'purpose', 'pickupOther', 'dropoffOther'].forEach(function (id) {
+  ['date', 'until', 'start', 'end', 'purpose', 'pickupOther', 'dropoffOther'].forEach(function (id) {
     var el = document.getElementById(id); if (el) el.value = '';
   });
+  document.getElementById('repeatOn').checked = false;
+  toggleRepeat();
+  document.body.scrollTop = 0;
   window.scrollTo(0, 0);
 }
 
-function money(n) {
-  return Number(n || 0).toLocaleString('id-ID');
-}
+
+/* ---------------- active ---------------- */
 
 function loadList() {
   var box = document.getElementById('listBody');
   box.innerHTML = '<p class="empty">Loading…</p>';
 
   api('list').then(function (res) {
-    if (!res || !res.ok) { box.innerHTML = '<p class="empty">' + ((res && res.message) || 'Could not load.') + '</p>'; return; }
+    if (!res || !res.ok) { box.innerHTML = '<p class="empty">' + esc((res && res.message) || 'Could not load.') + '</p>'; return; }
     if (!res.bookings.length) { box.innerHTML = '<p class="empty">No active bookings.</p>'; return; }
 
     box.innerHTML = res.bookings.map(function (b) {
-      var acts = '';
+      var id = js(b.id), acts = '';
       if (b.status === 'ONGOING' && b.selfDrive) {
-        acts += '<button class="fin" onclick="doFinish(\'' + b.id + '\')">Finish trip</button>';
+        acts += '<button class="fin" onclick="doFinish(\'' + id + '\')">Finish trip</button>';
       }
-      acts += '<button class="ext" onclick="showExt(\'' + b.id + '\')">Add time</button>' +
-              '<button class="cxl" onclick="doCancel(\'' + b.id + '\')">Cancel</button>';
+      acts += '<button class="ext" onclick="showExt(\'' + id + '\')">Add time</button>' +
+              '<button class="cxl" onclick="doCancel(\'' + id + '\')">Cancel</button>';
 
       return '<div class="bk">' +
-        '<div class="top"><b>' + b.id + '</b><span class="tag ' + b.status + '">' + b.status + '</span></div>' +
-        '<p>' + b.when + '</p><p>' + b.vehicle + '</p><p>' + b.route + '</p>' +
-        (b.driver ? '<p>Driver: ' + b.driver + '</p>' : '') +
+        '<div class="top"><b>' + esc(b.id) + '</b><span class="tag ' + js(b.status) + '">' + esc(b.status) + '</span></div>' +
+        '<p>' + esc(b.when) + '</p><p>' + esc(b.vehicle) + '</p><p>' + esc(b.route) + '</p>' +
+        (b.driver ? '<p>Driver: ' + esc(b.driver) + '</p>' : '') +
         '<div class="acts">' + acts + '</div>' +
-        '<div class="extbox" id="ext-' + b.id + '">' +
-          '<input type="time" id="endt-' + b.id + '" value="' + b.end + '">' +
-          '<button onclick="doExtend(\'' + b.id + '\')">Save</button>' +
+        '<div class="extbox" id="ext-' + id + '">' +
+          '<input type="time" id="endt-' + id + '" value="' + esc(b.end) + '">' +
+          '<button onclick="doExtend(\'' + id + '\')">Save</button>' +
         '</div></div>';
     }).join('');
   }).catch(function (err) {
-    box.innerHTML = '<p class="empty">Could not load: ' + err.message + '</p>';
-  });
-}
-
-function loadHist() {
-  var box = document.getElementById('histBody');
-  box.innerHTML = '<p class="empty">Loading…</p>';
-
-  api('history').then(function (res) {
-    if (!res || !res.ok) { box.innerHTML = '<p class="empty">' + ((res && res.message) || 'Could not load.') + '</p>'; return; }
-    if (!res.bookings.length) { box.innerHTML = '<p class="empty">Nothing here yet.</p>'; return; }
-
-    box.innerHTML = res.bookings.map(function (b) {
-      return '<div class="bk">' +
-        '<div class="top"><b>' + b.id + '</b><span class="tag ' + b.status.replace(' ', '') + '">' + b.status + '</span></div>' +
-        '<p>' + b.when + '</p><p>' + b.vehicle + '</p><p>' + b.route + '</p>' +
-        (b.driver ? '<p>Driver: ' + b.driver + '</p>' : '') +
-        (b.total ? '<div class="cost">' + money(b.total) + '</div>' : '') +
-        '</div>';
-    }).join('');
-  }).catch(function (err) {
-    box.innerHTML = '<p class="empty">Could not load: ' + err.message + '</p>';
+    box.innerHTML = '<p class="empty">Could not load: ' + esc(err.message) + '</p>';
   });
 }
 
@@ -450,7 +583,7 @@ function showExt(id) {
 }
 
 function doExtend(id) {
-  var t = document.getElementById('endt-' + id).value;
+  var t = val('endt-' + id);
   if (!t) { showMsg('Choose a new end time first.'); return; }
   api('extend', { id: id, end: t }).then(function (res) {
     showMsg(res.message, res.ok);
@@ -474,17 +607,44 @@ function doFinish(id) {
   });
 }
 
+
+/* ---------------- history ---------------- */
+
+function loadHist() {
+  var box = document.getElementById('histBody');
+  box.innerHTML = '<p class="empty">Loading…</p>';
+
+  api('history').then(function (res) {
+    if (!res || !res.ok) { box.innerHTML = '<p class="empty">' + esc((res && res.message) || 'Could not load.') + '</p>'; return; }
+    if (!res.bookings.length) { box.innerHTML = '<p class="empty">Nothing here yet.</p>'; return; }
+
+    box.innerHTML = res.bookings.map(function (b) {
+      return '<div class="bk">' +
+        '<div class="top"><b>' + esc(b.id) + '</b><span class="tag ' + js(b.status) + '">' + esc(b.status) + '</span></div>' +
+        '<p>' + esc(b.when) + '</p><p>' + esc(b.vehicle) + '</p><p>' + esc(b.route) + '</p>' +
+        (b.driver ? '<p>Driver: ' + esc(b.driver) + '</p>' : '') +
+        (b.total ? '<div class="cost">' + money(b.total) + '</div>' : '') +
+        '</div>';
+    }).join('');
+  }).catch(function (err) {
+    box.innerHTML = '<p class="empty">Could not load: ' + esc(err.message) + '</p>';
+  });
+}
+
+
+/* ---------------- me ---------------- */
+
 function loadMe() {
   var box = document.getElementById('meBody');
   api('me').then(function (r) {
     if (!r || !r.ok) { box.innerHTML = '<p class="empty">Could not load.</p>'; return; }
-    var html = '<dt>Name</dt><dd>' + r.name + '</dd>' +
-               '<dt>Department</dt><dd>' + r.dept + '</dd>' +
-               '<dt>Role</dt><dd>' + r.role + '</dd>';
+    var html = '<dt>Name</dt><dd>' + esc(r.name) + '</dd>' +
+               '<dt>Department</dt><dd>' + esc(r.dept) + '</dd>' +
+               '<dt>Role</dt><dd>' + esc(r.role) + '</dd>';
     if (r.wa || r.tg) {
       html += '<dt>Need help?</dt><dd>' +
-        (r.wa ? 'WhatsApp: ' + r.wa + '<br>' : '') +
-        (r.tg ? 'Telegram: ' + r.tg : '') + '</dd>';
+        (r.wa ? 'WhatsApp: ' + esc(r.wa) + '<br>' : '') +
+        (r.tg ? 'Telegram: ' + esc(r.tg) : '') + '</dd>';
     }
     box.innerHTML = html;
   });
