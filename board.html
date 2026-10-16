@@ -775,7 +775,11 @@ function monthView(r) {
 
 function peakUnits(list) {
   var pts = [];
-  list.forEach(function (b) { pts.push([toMin(b.start), b.units]); pts.push([toMin(b.end), -b.units]); });
+  list.forEach(function (b) {
+    var s = toMin(b.start), e = toMin(b.end);
+    if (e <= s) e += 1440;
+    pts.push([s, b.units]); pts.push([e, -b.units]);
+  });
   pts.sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; });
   var cur = 0, max = 0;
   pts.forEach(function (p) { cur += p[1]; if (cur > max) max = cur; });
