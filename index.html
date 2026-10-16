@@ -210,7 +210,8 @@ dl.me dd{margin:2px 0 0;color:var(--muted);word-break:break-word}
         <div class="field"><label>Start</label><input type="time" id="start"></div>
         <div class="field"><label>End</label><input type="time" id="end"></div>
       </div>
-
+      <div class="hint" id="nextDayNote" style="display:none;margin:-6px 0 14px;color:#2E6B4C;font-weight:600"></div>
+      
       <div class="field">
         <label>How many vehicles</label>
         <select id="units"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
@@ -394,7 +395,19 @@ function hideMsg() { document.getElementById('msg').style.display = 'none'; }
 
 
 /* ---------------- book ---------------- */
-
+function nextDayNote() {
+  var s = val('start'), e = val('end'), n = document.getElementById('nextDayNote');
+  if (!n) return;
+  if (s && e && e <= s) {
+    n.textContent = (e === s) ? 'Start and end cannot be the same time.' : 'Ends the next day at ' + e + '.';
+    n.style.display = 'block';
+  } else n.style.display = 'none';
+}
+['start', 'end'].forEach(function (id) {
+  var el = document.getElementById(id);
+  if (el) { el.addEventListener('input', nextDayNote); el.addEventListener('change', nextDayNote); }
+});
+  
 var typeRadios = document.getElementsByName('type');
 for (var i = 0; i < typeRadios.length; i++) {
   typeRadios[i].addEventListener('change', function () {
@@ -539,6 +552,7 @@ function resetForm() {
   });
   document.getElementById('repeatOn').checked = false;
   toggleRepeat();
+  nextDayNote();
   document.body.scrollTop = 0;
   window.scrollTo(0, 0);
 }
