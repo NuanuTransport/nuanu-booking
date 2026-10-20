@@ -214,7 +214,7 @@ dl.me dd{margin:2px 0 0;color:var(--muted);word-break:break-word}
       
       <div class="field">
         <label>How many vehicles</label>
-        <select id="units"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
+        <select id="units"><option>1</option></select>
       </div>
 
       <div class="field">
@@ -351,6 +351,8 @@ function start() {
       document.getElementById('repeatBox').style.display = 'block';
     }
 
+    FLEET = r.fleet || {};
+    setUnits();
     document.getElementById('date').min = r.today;
     document.getElementById('until').min = r.today;
 
@@ -408,10 +410,24 @@ function nextDayNote() {
   if (el) { el.addEventListener('input', nextDayNote); el.addEventListener('change', nextDayNote); }
 });
   
+var FLEET = {};
+
+/** Unit choices go up to how many of that vehicle the fleet has. */
+function setUnits() {
+  var t = (document.querySelector('input[name=type]:checked') || {}).value || '6-seater';
+  var max = Math.max(1, Math.min(60, Number(FLEET[t]) || 10));
+  var sel = document.getElementById('units');
+  var cur = Math.min(Number(sel.value) || 1, max);
+  var html = '';
+  for (var n = 1; n <= max; n++) html += '<option' + (n === cur ? ' selected' : '') + '>' + n + '</option>';
+  sel.innerHTML = html;
+}
+  
 var typeRadios = document.getElementsByName('type');
 for (var i = 0; i < typeRadios.length; i++) {
   typeRadios[i].addEventListener('change', function () {
     var v = this.value;
+    setUnits();
     var canSelf = (v === '6-seater' || v === 'cargo' || v === 'motorcycle');
     var mustSelf = (v === 'motorcycle');
     var self = document.getElementById('selfOpt');
