@@ -155,6 +155,12 @@ table.ft tr.t-rest td{color:var(--muted)}
 .checks label{display:flex;gap:8px;align-items:flex-start;font-weight:400;color:var(--ink);font-size:14px;margin:0}
 .checks input{width:auto;margin-top:3px}
 .money{grid-column:1/-1;background:var(--soft);border-radius:6px;padding:10px 12px;font-size:14px;line-height:1.5}
+.delbtn{background:var(--card);border:1px solid var(--stop);color:var(--stop)}
+.delbox{display:none;margin-top:14px;padding:14px;border:1px solid #E2B7B0;background:#FBF1EF;border-radius:6px}
+.delbox label{display:block;font-size:13px;font-weight:600;margin:8px 0 4px}
+.delbox input[type=text]{width:100%;padding:9px;border:1px solid var(--line);border-radius:6px;font-size:14px}
+.delbox .go{margin-top:12px;width:100%;padding:12px;border:0;border-radius:6px;background:var(--stop);color:#fff;font-size:15px;font-weight:600;cursor:pointer}
+.delbox .go:disabled{opacity:.6;cursor:wait}
 .emsg{display:none;margin-bottom:12px;padding:10px 12px;border-radius:6px;font-size:14px;background:#F6E3E0;border:1px solid #E2B7B0;color:#7A2A20;white-space:pre-line}
 .sheetActs{display:flex;gap:10px;margin-top:18px}
 .sheetActs button{flex:1;padding:13px;font-size:15px;font-weight:600;border-radius:6px;cursor:pointer}
@@ -966,6 +972,19 @@ function drawEdit(r) {
     '<div class="sheetActs">' +
       '<button class="close" onclick="closeModal()">Close</button>' +
       '<button class="save" id="e_save" onclick="saveEdit()">Save changes</button>' +
+    '</div>' +
+    '<div class="sheetActs"><button class="delbtn" onclick="showDelete()">Delete work order</button></div>' +
+    '<div class="delbox" id="delbox">' +
+      '<b>Delete ' + esc(b.id) + '?</b>' +
+      '<div class="small muted" style="margin-top:4px">It disappears from the board, bills and reports. ' +
+        'A copy is kept in the Deleted tab of the sheet.</div>' +
+      '<label>Reason</label><input type="text" id="d_reason" placeholder="e.g. duplicate booking">' +
+      '<label>Type ' + esc(b.id) + ' to confirm</label><input type="text" id="d_confirm" autocomplete="off">' +
+      (active
+        ? '<div class="checks"><label><input type="checkbox" id="d_notify"' + (b.hasRequester ? ' checked' : ' disabled') + '>' +
+          '<span>Tell the requester' + (b.driverId ? ' (the driver is always told)' : '') + '</span></label></div>'
+        : '') +
+      '<button class="go" id="d_go" onclick="doDelete()">Delete for good</button>' +
     '</div>';
 
   showModal(html);
@@ -1004,7 +1023,41 @@ function saveEdit() {
   });
 }
 
+function showDelete() {
+  var box = document.getElementById('delbox');
+  box.style.display = 'block';
+  document.getElementById('d_confirm').focus();
+  box.scrollIntoView({ block: 'nearest' });
+}
 
+function doDelete() {
+  if (!EDIT) return;
+  var typed = val('d_confirm');
+  if (typed.toUpperCase() !== String(EDIT.id).toUpperCase()) {
+    editMsg('Type ' + EDIT.id + ' exactly to confirm the delete.');
+    return;
+  }
+  var n = document.getElementById('d_notify');
+  var btn = document.getElementById('d_go');
+  btn.disabled = true; btn.textContent = 'Deleting…';
+
+  api('delete', { id: EDIT.id, confirm: typed, reason: val('d_reason'), notify: n ? n.checked : false }).then(function (r) {
+    btn.disabled = false; btn.textContent = 'Delete for good';
+    if (!r || !r.ok) {
+      if (r && r.auth) { closeModal(); authLost(r.message); return; }
+      editMsg((r && r.message) || 'Could not delete.');
+      return;
+    }
+    toast(r.message || 'Deleted');
+    closeModal();
+    load(true);
+    if (VIEW === 'bookings') runSearch();
+  }).catch(function () {
+    btn.disabled = false; btn.textContent = 'Delete for good';
+    editMsg('Could not reach the server. Check the booking before trying again.');
+  });
+}
+  
 /* ---------------- Fleet ---------------- */
 
 function loadFleet() {
