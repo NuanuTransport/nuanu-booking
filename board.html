@@ -104,6 +104,8 @@ td.today{background:#FFFBEF}
 .filters .grow{flex:1 1 220px}
 .filters label{font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
 .filters input,.filters select{width:100%;padding:9px 10px;font-size:15px;border:1px solid var(--line);border-radius:6px;font-family:inherit;background:var(--card);color:var(--ink)}
+.filters input[type=date],.filters input[type=time],.fgrid input[type=date],.fgrid input[type=time]{-webkit-appearance:none;appearance:none;display:block;min-width:0;max-width:100%;height:40px;text-align:left;line-height:normal}
+input[type=date]::-webkit-date-and-time-value,input[type=time]::-webkit-date-and-time-value{text-align:left;margin:0}
 .filters button{padding:10px 18px;font-size:15px;font-weight:600;background:var(--ink);color:#fff;border:0;border-radius:6px;cursor:pointer}
 .list{padding:14px 22px 40px}
 .row{display:grid;grid-template-columns:120px 1fr auto;gap:14px;align-items:center;background:var(--card);border:1px solid var(--line);border-left:5px solid var(--line);border-radius:7px;padding:11px 14px;margin-bottom:8px}
@@ -172,7 +174,12 @@ table.ft tr.t-rest td{color:var(--muted)}
 #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:13px 22px;border-radius:8px;font-size:15px;display:none;max-width:88vw;box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:60}
 
 @media (max-width:640px){
-  .fgrid{grid-template-columns:1fr}
+  .fgrid{grid-template-columns:1fr 1fr;gap:12px 10px}
+  .fgrid > div{min-width:0}
+  .filters{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 14px 0}
+  .filters .grow,.filters > div:last-child{grid-column:1/-1}
+  .filters button{width:100%}
+  .sheet{padding:18px 14px 14px}
   .row{grid-template-columns:1fr}
   .row .side{text-align:left}
   .acct{display:none}
@@ -805,7 +812,7 @@ function showBookings() {
     '<div class="filters">' +
       '<div><label>From</label><input type="date" id="bq_from" value="' + esc(BQ.from) + '"></div>' +
       '<div><label>To</label><input type="date" id="bq_to" value="' + esc(BQ.to) + '"></div>' +
-      '<div><label>Show</label><select id="bq_scope">' +
+      '<div class="grow"><label>Show</label><select id="bq_scope">' +
         opt('all', 'Everything', BQ.scope) + opt('active', 'Active only', BQ.scope) + opt('history', 'History only', BQ.scope) +
       '</select></div>' +
       '<div class="grow"><label>Search</label><input type="search" id="bq_text" value="' + esc(BQ.text) +
