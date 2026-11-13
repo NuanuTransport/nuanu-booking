@@ -1291,4 +1291,69 @@ function openDays(id) {
     'For a one-off break such as maintenance, use "Take a vehicle out of service" instead.</p>' +
     '<div class="sheetActs">' +
       '<button class="close" onclick="closeModal()">Close</button>' +
-      '<button class="save" id="d
+      '<button class="save" id="d_save" onclick="saveDays(\'' + js(v.id) + '\')">Save days</button>' +
+    '</div>';
+  showModal(html);
+}
+
+function pickDays(list) {
+  var boxes = document.querySelectorAll('#daypick input');
+  for (var i = 0; i < boxes.length; i++) {
+    var on = list.indexOf(Number(boxes[i].value)) > -1;
+    boxes[i].checked = on;
+    boxes[i].parentNode.className = on ? 'on' : '';
+  }
+}
+
+function saveDays(id) {
+  var days = [];
+  var boxes = document.querySelectorAll('#daypick input');
+  for (var i = 0; i < boxes.length; i++) if (boxes[i].checked) days.push(Number(boxes[i].value));
+  if (!days.length) { editMsg('Tick at least one day.'); return; }
+
+  var vehicles = [id];
+  var also = document.querySelectorAll('.alsoV');
+  for (var j = 0; j < also.length; j++) if (also[j].checked) vehicles.push(also[j].value);
+
+  var btn = document.getElementById('d_save');
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  api('fleetoff', { mode: 'days', vehicles: vehicles, days: days }).then(function (r) {
+    btn.disabled = false; btn.textContent = 'Save days';
+    if (!r || !r.ok) {
+      if (r && r.auth) { closeModal(); authLost(r.message); return; }
+      editMsg((r && r.message) || 'Could not save.');
+      return;
+    }
+    closeModal();
+    toast(r.message);
+    var conflicts = r.conflicts || [];
+    loadFleet().then(function () {
+      if (!conflicts.length) return;
+      var el = document.getElementById('fmsg');
+      if (el) el.innerHTML = '<div class="warn"><b>Overbooked after this change.</b><br>' +
+        conflicts.map(function (c) {
+          return esc(c.label) + ': ' + c.peak + ' booked, ' + c.cap + ' working — ' + esc(c.ids.join(', '));
+        }).join('<br>') +
+        '<br>Move or cancel one of these in Bookings, or give another vehicle that day.</div>';
+    });
+  }).catch(function () {
+    btn.disabled = false; btn.textContent = 'Save days';
+    editMsg('Could not reach the server. Check the Fleet tab before trying again.');
+  });
+}
+
+function bringBack(key, id, btn) {
+  if (!confirm('Put ' + id + ' back in service?')) return;
+  btn.disabled = true;
+  api('fleetremove', { key: key }).then(function (r) {
+    toast((r && r.message) || 'Done');
+    loadFleet();
+  }).catch(function (e) { btn.disabled = false; toast('Failed: ' + e.message); });
+}
+
+
+boot();
+</script>
+</body>
+</html>
