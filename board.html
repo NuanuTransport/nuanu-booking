@@ -123,6 +123,7 @@ input[type=date]::-webkit-date-and-time-value,input[type=time]::-webkit-date-and
 .tag{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--band);color:var(--muted);margin-left:6px;vertical-align:1px}
 .note{color:var(--muted);font-size:14px;margin:0 0 10px}
 .panel{margin:16px 22px 0;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px}
+.panel{overflow-x:auto}
 .panel h3{margin:0 0 12px;font-size:15px}
 .panel .filters{padding:0}
 .fleetSum{display:flex;flex-wrap:wrap;gap:10px;padding:16px 22px 0}
@@ -137,6 +138,8 @@ table.ft td{padding:8px;border-bottom:1px solid #EDF0EC;vertical-align:top}
 table.ft td b{white-space:nowrap}
 table.ft tr.t-off td{color:var(--stop)}
 table.ft tr.t-rest td{color:var(--muted)}
+table.ft tr.t-temp td{color:var(--blue)}
+.tpill{display:inline-block;font-size:11px;font-weight:600;background:#E8EDF6;color:var(--blue);border-radius:20px;padding:1px 8px;margin-left:6px}
 .pill{display:inline-block;font-size:11px;font-weight:600;background:#F6E3E0;color:var(--stop);border-radius:20px;padding:1px 8px;margin-left:6px}
 .mini{padding:6px 12px;font-size:13px;font-weight:600;background:var(--card);border:1px solid var(--line);border-radius:6px;cursor:pointer}
 .warn{margin:16px 22px 0;padding:14px 16px;border-radius:8px;background:#F6E3E0;border:1px solid #E2B7B0;color:#7A2A20;font-size:14px;line-height:1.5}
@@ -1133,6 +1136,38 @@ function drawFleet(r) {
       : '<p class="muted small" style="margin:0">Nothing scheduled. Every active vehicle is in service.</p>') +
     '</div>';
 
+  var extras = r.extras || [];
+  var fleetTypes = r.fleetTypes || TYPE_LIST;
+  var temp = '<div class="panel"><h3>Temporary vehicles</h3>' +
+    '<p class="muted small" style="margin:0 0 12px">For a vehicle that is not in the Fleet list — rented or borrowed — ' +
+    'that can be booked only between two dates.</p>' +
+    (r.canEdit
+      ? '<div class="filters">' +
+          '<div class="grow"><label>Name</label><input id="x_name" placeholder="e.g. Rental Bus 1"></div>' +
+          '<div><label>Type</label><select id="x_type">' +
+            fleetTypes.map(function (t) { return '<option value="' + esc(t) + '">' + esc(t) + '</option>'; }).join('') +
+          '</select></div>' +
+          '<div><label>Plate</label><input id="x_plate" placeholder="optional"></div>' +
+          '<div><label>From</label><input type="date" id="x_from" value="' + esc(r.date) + '"></div>' +
+          '<div><label>To</label><input type="date" id="x_to" value="' + esc(r.date) + '"></div>' +
+          '<div class="grow"><label>Note</label><input id="x_note" placeholder="e.g. rented for Oshom event"></div>' +
+          '<div><button onclick="addTemp(this)">Add vehicle</button></div>' +
+        '</div>'
+      : '') +
+    (extras.length
+      ? '<table class="ft" style="margin-top:14px"><tr><th>Vehicle</th><th>Type</th><th>When</th><th>Note</th>' +
+          (r.canEdit ? '<th></th>' : '') + '</tr>' +
+        extras.map(function (x) {
+          return '<tr><td><b>' + esc(x.id) + '</b>' + (x.plate && x.id.indexOf(x.plate) < 0 ? '<br><span class="muted small">' + esc(x.plate) + '</span>' : '') + '</td>' +
+            '<td>' + esc(x.type) + '</td>' +
+            '<td>' + esc(x.span) + (x.now ? '<span class="tpill">now</span>' : '') + '</td>' +
+            '<td>' + esc(x.note || '—') + '</td>' +
+            (r.canEdit ? '<td><button class="mini" onclick="removeTemp(\'' + js(x.key) + '\',\'' + String(x.id).replace(/[^A-Za-z0-9 _\-.]/g, '') + '\',this)">Remove</button></td>' : '') +
+          '</tr>';
+        }).join('') + '</table>'
+      : '<p class="muted small" style="margin:' + (r.canEdit ? '14px' : '0') + ' 0 0">No temporary vehicles now or coming up.</p>') +
+    '</div>';
+
   var list = '<div class="panel" style="margin-bottom:40px"><h3>Vehicles on ' + esc(r.label) + '</h3>' +
     '<table class="ft"><tr><th>ID</th><th>Type</th><th>Plate</th><th>Days</th><th>Status</th></tr>' +
     r.vehicles.map(function (v) {
@@ -1149,7 +1184,7 @@ function drawFleet(r) {
     '<div id="fleetWrap">' +
       '<div class="filters"><div><label>Day</label><input type="date" id="f_day" value="' + esc(r.date) +
         '" onchange="FDATE=this.value;loadFleet()"></div></div>' +
-      summary + '<div id="fmsg"></div>' + addForm + offs + list +
+      summary + '<div id="fmsg"></div>' + addForm + offs + temp + list +
     '</div>';
 }
 
@@ -1175,6 +1210,48 @@ function takeOut(btn) {
     });
   }).catch(function (e) { btn.disabled = false; toast('Failed: ' + e.message); });
 }
+
+/* ---- temporary vehicles ---- */
+
+function addTemp(btn) {
+  var d = { mode: 'extra', name: val('x_name'), type: val('x_type'), plate: val('x_plate'),
+            from: val('x_from'), to: val('x_to'), note: val('x_note') };
+  if (!d.name && !d.plate) { toast('Give the vehicle a name or a plate.'); return; }
+  if (!d.from) { toast('Choose the first day.'); return; }
+  if (d.to && d.to < d.from) { toast('The end date is before the start date.'); return; }
+
+  btn.disabled = true;
+  api('fleetoff', d).then(function (r) {
+    btn.disabled = false;
+    if (!r || !r.ok) {
+      if (r && r.auth) { authLost(r.message); return; }
+      toast((r && r.message) || 'Could not save.');
+      return;
+    }
+    toast(r.message);
+    loadFleet();
+  }).catch(function (e) { btn.disabled = false; toast('Failed: ' + e.message); });
+}
+
+function removeTemp(key, name, btn) {
+  if (!confirm('Remove ' + name + '?\n\nIt can no longer be booked. Days it already worked stay on record.')) return;
+  btn.disabled = true;
+  api('fleetremove', { mode: 'extra', key: key }).then(function (r) {
+    if (!r || !r.ok) { btn.disabled = false; toast((r && r.message) || 'Could not remove.'); return; }
+    toast(r.message);
+    var conflicts = r.conflicts || [];
+    loadFleet().then(function () {
+      if (!conflicts.length) return;
+      var el = document.getElementById('fmsg');
+      if (el) el.innerHTML = '<div class="warn"><b>Overbooked after this change.</b><br>' +
+        conflicts.map(function (c) {
+          return esc(c.label) + ': ' + c.peak + ' booked, ' + c.cap + ' working — ' + esc(c.ids.join(', '));
+        }).join('<br>') +
+        '<br>Move or cancel one of these in Bookings, or add the vehicle back for those days.</div>';
+    });
+  }).catch(function (e) { btn.disabled = false; toast('Failed: ' + e.message); });
+}
+
 
 /* ---- working days editor ---- */
 
@@ -1214,69 +1291,4 @@ function openDays(id) {
     'For a one-off break such as maintenance, use "Take a vehicle out of service" instead.</p>' +
     '<div class="sheetActs">' +
       '<button class="close" onclick="closeModal()">Close</button>' +
-      '<button class="save" id="d_save" onclick="saveDays(\'' + js(v.id) + '\')">Save days</button>' +
-    '</div>';
-  showModal(html);
-}
-
-function pickDays(list) {
-  var boxes = document.querySelectorAll('#daypick input');
-  for (var i = 0; i < boxes.length; i++) {
-    var on = list.indexOf(Number(boxes[i].value)) > -1;
-    boxes[i].checked = on;
-    boxes[i].parentNode.className = on ? 'on' : '';
-  }
-}
-
-function saveDays(id) {
-  var days = [];
-  var boxes = document.querySelectorAll('#daypick input');
-  for (var i = 0; i < boxes.length; i++) if (boxes[i].checked) days.push(Number(boxes[i].value));
-  if (!days.length) { editMsg('Tick at least one day.'); return; }
-
-  var vehicles = [id];
-  var also = document.querySelectorAll('.alsoV');
-  for (var j = 0; j < also.length; j++) if (also[j].checked) vehicles.push(also[j].value);
-
-  var btn = document.getElementById('d_save');
-  btn.disabled = true; btn.textContent = 'Saving…';
-
-  api('fleetoff', { mode: 'days', vehicles: vehicles, days: days }).then(function (r) {
-    btn.disabled = false; btn.textContent = 'Save days';
-    if (!r || !r.ok) {
-      if (r && r.auth) { closeModal(); authLost(r.message); return; }
-      editMsg((r && r.message) || 'Could not save.');
-      return;
-    }
-    closeModal();
-    toast(r.message);
-    var conflicts = r.conflicts || [];
-    loadFleet().then(function () {
-      if (!conflicts.length) return;
-      var el = document.getElementById('fmsg');
-      if (el) el.innerHTML = '<div class="warn"><b>Overbooked after this change.</b><br>' +
-        conflicts.map(function (c) {
-          return esc(c.label) + ': ' + c.peak + ' booked, ' + c.cap + ' working — ' + esc(c.ids.join(', '));
-        }).join('<br>') +
-        '<br>Move or cancel one of these in Bookings, or give another vehicle that day.</div>';
-    });
-  }).catch(function () {
-    btn.disabled = false; btn.textContent = 'Save days';
-    editMsg('Could not reach the server. Check the Fleet tab before trying again.');
-  });
-}
-
-function bringBack(key, id, btn) {
-  if (!confirm('Put ' + id + ' back in service?')) return;
-  btn.disabled = true;
-  api('fleetremove', { key: key }).then(function (r) {
-    toast((r && r.message) || 'Done');
-    loadFleet();
-  }).catch(function (e) { btn.disabled = false; toast('Failed: ' + e.message); });
-}
-
-
-boot();
-</script>
-</body>
-</html>
+      '<button class="save" id="d
